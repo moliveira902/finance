@@ -1,0 +1,13 @@
+{
+  "name": "financeapp",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "lint": "pnpm --filter web lint"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

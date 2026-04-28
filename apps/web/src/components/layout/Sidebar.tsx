@@ -1,0 +1,87 @@
+"use client";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import {
+  LayoutDashboard, ArrowLeftRight, PiggyBank,
+  BarChart2, Settings, LogOut, Wallet,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const NAV = [
+  { label: "Dashboard",    href: "/dashboard",    icon: LayoutDashboard },
+  { label: "Transações",   href: "/transactions", icon: ArrowLeftRight  },
+  { label: "Orçamentos",   href: "/budgets",      icon: PiggyBank       },
+  { label: "Relatórios",   href: "/reports",      icon: BarChart2       },
+  { label: "Configurações",href: "/settings",     icon: Settings        },
+];
+
+export function Sidebar() {
+  const pathname = usePathname();
+  const router   = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
+
+  return (
+    <aside className="fixed inset-y-0 left-0 w-[230px] bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex flex-col z-40">
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 px-5 h-12 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div className="w-7 h-7 rounded-xl bg-sky-500 flex items-center justify-center shadow-sm shadow-sky-500/30">
+          <Wallet size={14} className="text-white" />
+        </div>
+        <span className="font-bold text-slate-900 dark:text-white tracking-tight">FinanceApp</span>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
+        {NAV.map(({ label, href, icon: Icon }) => {
+          const active = pathname === href || pathname.startsWith(href + "/");
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "flex items-center gap-3 h-9 px-3 rounded-lg text-sm font-medium transition-colors",
+                active
+                  ? "bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
+              )}
+            >
+              <Icon
+                size={15}
+                className={cn(
+                  "shrink-0",
+                  active ? "text-sky-500" : "text-slate-400 dark:text-slate-500"
+                )}
+              />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* User */}
+      <div className="px-3 py-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+        <div className="flex items-center gap-3 px-2 py-1.5 rounded-lg mb-0.5">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            MO
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">Matheus O.</p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">moliveira902@gmail.com</p>
+          </div>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2.5 w-full h-8 px-3 rounded-lg text-sm text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+        >
+          <LogOut size={14} className="shrink-0" />
+          Sair da conta
+        </button>
+      </div>
+    </aside>
+  );
+}
