@@ -6,6 +6,21 @@ import {
   BarChart2, Settings, LogOut, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFinanceStore } from "@/stores/financeStore";
+
+function nameInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function shortName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "Usuário";
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+}
 
 const NAV = [
   { label: "Dashboard",    href: "/dashboard",    icon: LayoutDashboard },
@@ -18,6 +33,9 @@ const NAV = [
 export function Sidebar() {
   const pathname = usePathname();
   const router   = useRouter();
+  const { profile } = useFinanceStore();
+  const initials = nameInitials(profile.name);
+  const displayName = shortName(profile.name);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -66,12 +84,16 @@ export function Sidebar() {
       {/* User */}
       <div className="px-3 py-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
         <div className="flex items-center gap-3 px-2 py-1.5 rounded-lg mb-0.5">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
-            MO
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold shrink-0 select-none">
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">Matheus O.</p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">moliveira902@gmail.com</p>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
+              {displayName}
+            </p>
+            {profile.email && (
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">{profile.email}</p>
+            )}
           </div>
         </div>
         <button
