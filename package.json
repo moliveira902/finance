@@ -3,8 +3,19 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter web dev",
-    "build": "pnpm --filter web build",
-    "lint": "pnpm --filter web lint"
+    "dev:api": "pnpm --filter @financeapp/api dev",
+    "dev:worker": "pnpm --filter @financeapp/worker dev",
+    "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:api\" \"pnpm dev:worker\"",
+    "build": "pnpm --filter @financeapp/shared-types build && pnpm --filter @financeapp/api build && pnpm --filter web build",
+    "lint": "pnpm --filter web lint",
+    "test": "pnpm --filter @financeapp/api test",
+    "type-check": "pnpm -r type-check",
+    "db:seed": "pnpm --filter @financeapp/api db:seed",
+    "db:migrate": "pnpm --filter @financeapp/api db:migrate",
+    "db:studio": "pnpm --filter @financeapp/api db:studio"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   },
   "workspaces": [
     "apps/*",

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
     "@tanstack/react-query": "^5.100.6",
     "clsx": "^2.1.1",
     "lucide-react": "^1.12.0",
@@ -17,7 +18,9 @@
     "react-dom": "^18",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.12",
+    "jose": "^5.6.3",
+    "@financeapp/shared-types": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20",

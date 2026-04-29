@@ -1,0 +1,26 @@
+{
+  "name": "@financeapp/worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.0",
+    "@financeapp/shared-types": "workspace:*",
+    "@prisma/client": "^5.14.0",
+    "bullmq": "^5.7.0",
+    "ioredis": "^5.3.2",
+    "pino": "^9.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "prisma": "^5.14.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}

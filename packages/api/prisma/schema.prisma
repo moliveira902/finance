@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @db.Uuid
+  auth0Id      String    @unique
+  email        String    @unique
+  name         String?
+  timezone     String    @default("America/Sao_Paulo")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  accounts     Account[]
+  transactions Transaction[]
+  budgets      Budget[]
+  categories   Category[]
+
+  @@map("users")
+}
+
+model Account {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String    @db.Uuid
+  name         String
+  type         String
+  currency     String    @default("BRL")
+  balanceCents Int       @default(0)
+  color        String?
+  icon         String?
+  institution  String?
+  isArchived   Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Category {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String?   @db.Uuid
+  name      String
+  slug      String
+  color     String    @default("#6366F1")
+  icon      String?
+  parentId  String?   @db.Uuid
+  isSystem  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  user                User?         @relation(fields: [userId], references: [id])
+  parent              Category?     @relation("SubCategories", fields: [parentId], references: [id])
+  children            Category[]    @relation("SubCategories")
+  transactions        Transaction[] @relation("TransactionCategory")
+  aiTransactions      Transaction[] @relation("TransactionAiCategory")
+  budgets             Budget[]
+
+  @@unique([userId, slug])
+  @@index([userId])
+  @@map("categories")
+}
+
+model Transaction {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String    @db.Uuid
+  accountId       String    @db.Uuid
+  categoryId      String?   @db.Uuid
+  amountCents     Int
+  description     String
+  notes           String?
+  transactionDate DateTime  @db.Date
+  type            String
+  source          String    @default("manual")
+  externalId      String?
+  isRecurring     Boolean   @default(false)
+  aiCategoryId    String?   @db.Uuid
+  aiConfidence    Float?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  user        User      @relation(fields: [userId], references: [id])
+  account     Account   @relation(fields: [accountId], references: [id])
+  category    Category? @relation("TransactionCategory", fields: [categoryId], references: [id])
+  aiCategory  Category? @relation("TransactionAiCategory", fields: [aiCategoryId], references: [id])
+
+  @@unique([accountId, externalId])
+  @@index([userId, transactionDate(sort: Desc)])
+  @@index([categoryId])
+  @@index([source])
+  @@map("transactions")
+}
+
+model Budget {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String    @db.Uuid
+  categoryId   String    @db.Uuid
+  name         String
+  amountCents  Int
+  period       String    @default("monthly")
+  alertAtPct   Int       @default(80)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id])
+  category     Category           @relation(fields: [categoryId], references: [id])
+  periods      BudgetPeriod[]
+
+  @@unique([userId, categoryId, period])
+  @@index([userId])
+  @@map("budgets")
+}
+
+model BudgetPeriod {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  budgetId      String   @db.Uuid
+  periodStart   DateTime @db.Date
+  periodEnd     DateTime @db.Date
+  spentCents    Int      @default(0)
+  alertSent80   Boolean  @default(false)
+  alertSent100  Boolean  @default(false)
+  computedAt    DateTime @default(now())
+
+  budget        Budget   @relation(fields: [budgetId], references: [id])
+
+  @@unique([budgetId, periodStart])
+  @@map("budget_periods")
+}
