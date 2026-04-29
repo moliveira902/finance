@@ -121,7 +121,7 @@ export default function DashboardPage() {
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
                   tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={TOOLTIP} formatter={(v) => [formatBRL(Number(v))]} />
+                <Tooltip contentStyle={TOOLTIP} formatter={(v) => [formatBRL(Number(v || 0))]} />
                 <Area type="monotone" dataKey="income"   stroke="#10b981" strokeWidth={2} fill="url(#gI)" name="Receitas" />
                 <Area type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} fill="url(#gE)" name="Despesas" />
               </AreaChart>
@@ -140,7 +140,7 @@ export default function DashboardPage() {
                   <Pie data={catBreakdown} cx={70} cy={70} innerRadius={44} outerRadius={68} dataKey="value" stroke="none">
                     {catBreakdown.map((_, i) => <Cell key={i} fill={catBreakdown[i].color} />)}
                   </Pie>
-                  <Tooltip formatter={(v) => [formatBRL(Number(v))]} contentStyle={TOOLTIP} />
+                  <Tooltip formatter={(v) => [formatBRL(Number(v || 0))]} contentStyle={TOOLTIP} />
                 </PieChart>
               </div>
               <div className="mt-2 space-y-2">

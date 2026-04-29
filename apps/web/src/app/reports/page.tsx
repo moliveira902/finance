@@ -137,7 +137,7 @@ export default function ReportsPage() {
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
                   tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={TOOLTIP} formatter={(v) => [formatBRL(Number(v))]} />
+                <Tooltip contentStyle={TOOLTIP} formatter={(v) => [formatBRL(Number(v || 0))]} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
                 <Bar dataKey="income"   name="Receitas" fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="expenses" name="Despesas" fill="#f87171" radius={[4, 4, 0, 0]} />
@@ -157,7 +157,7 @@ export default function ReportsPage() {
                   <Pie data={catBreakdown} cx="50%" cy="45%" outerRadius={90} innerRadius={50} dataKey="value" stroke="none">
                     {catBreakdown.map((_, i) => <Cell key={i} fill={catBreakdown[i].color} />)}
                   </Pie>
-                  <Tooltip formatter={(v) => [formatBRL(Number(v))]} contentStyle={TOOLTIP} />
+                  <Tooltip formatter={(v) => [formatBRL(Number(v || 0))]} contentStyle={TOOLTIP} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
