@@ -7,14 +7,16 @@ import { makeAuthHeader, DEMO_USER_ID } from "./helpers.js";
 const app = createApp();
 const auth = makeAuthHeader();
 
-const mockCategory = { id: "cat-1", name: "Alimentação", slug: "alimentacao", color: "#F59E0B", icon: "utensils", isSystem: true, userId: null, parentId: null, createdAt: new Date() };
-const mockAccount = { id: "acc-1", userId: DEMO_USER_ID, name: "Conta", type: "checking", currency: "BRL", balanceCents: 100000, institution: "Bradesco", color: null, icon: null, isArchived: false, createdAt: new Date(), updatedAt: new Date() };
+const CATEGORY_ID = "00000000-0000-0000-0000-000000000100";
+const ACCOUNT_ID  = "00000000-0000-0000-0000-000000000200";
+const mockCategory = { id: CATEGORY_ID, name: "Alimentação", slug: "alimentacao", color: "#F59E0B", icon: "utensils", isSystem: true, userId: null, parentId: null, createdAt: new Date() };
+const mockAccount = { id: ACCOUNT_ID, userId: DEMO_USER_ID, name: "Conta", type: "checking", currency: "BRL", balanceCents: 100000, institution: "Bradesco", color: null, icon: null, isArchived: false, createdAt: new Date(), updatedAt: new Date() };
 
 const mockTx = {
-  id: "tx-1",
+  id: "00000000-0000-0000-0000-000000000300",
   userId: DEMO_USER_ID,
-  accountId: "acc-1",
-  categoryId: "cat-1",
+  accountId: ACCOUNT_ID,
+  categoryId: CATEGORY_ID,
   amountCents: -38750,
   description: "Supermercado Extra",
   notes: null,
@@ -87,7 +89,7 @@ describe("POST /api/v1/transactions", () => {
       .post("/api/v1/transactions")
       .set("Authorization", auth)
       .send({
-        accountId: "acc-1",
+        accountId: ACCOUNT_ID,
         amountCents: -38750,
         description: "Supermercado Extra",
         transactionDate: "2026-04-28",

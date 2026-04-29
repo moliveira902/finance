@@ -5,14 +5,9 @@ import { UsersService } from "../services/users.service.js";
 export const usersRouter = Router();
 const svc = new UsersService();
 
-const VALID_TIMEZONES = Intl.supportedValuesOf("timeZone");
-
 const profileSchema = z.object({
   name: z.string().min(1).max(120).optional(),
-  timezone: z
-    .string()
-    .refine((tz) => VALID_TIMEZONES.includes(tz), { message: "Invalid timezone" })
-    .optional(),
+  timezone: z.string().min(1).max(60).optional(),
 });
 
 const notificationsSchema = z.object({

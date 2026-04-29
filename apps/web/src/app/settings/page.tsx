@@ -1,6 +1,9 @@
 "use client";
-import { useState } from "react";
-import { User, Bell, CreditCard, Download, Shield, Sparkles, Wallet, Check, Tag, Plus, Pencil, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  User, Bell, CreditCard, Download, Shield, Sparkles, Wallet, Check, Tag,
+  Plus, Pencil, Trash2, Users, Link2, Copy, RefreshCw,
+} from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -9,17 +12,19 @@ import { CategoryModal } from "@/components/modals/CategoryModal";
 import { useFinanceStore } from "@/stores/financeStore";
 import { formatBRL } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import type { Account, Category } from "@/lib/mock-data";
+import type { Account, Category, Member } from "@/lib/mock-data";
 
-type Tab = "profile" | "notifications" | "accounts" | "categories" | "ai" | "data";
+type Tab = "profile" | "members" | "accounts" | "categories" | "notifications" | "ai" | "integrations" | "data";
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: "profile",       label: "Perfil",                 icon: User    },
-  { id: "notifications", label: "Notificações",           icon: Bell    },
-  { id: "accounts",      label: "Contas",                 icon: CreditCard },
-  { id: "categories",    label: "Categorias",             icon: Tag     },
+  { id: "profile",       label: "Perfil",            icon: User       },
+  { id: "members",       label: "Membros",            icon: Users      },
+  { id: "accounts",      label: "Contas",             icon: CreditCard },
+  { id: "categories",    label: "Categorias",         icon: Tag        },
+  { id: "notifications", label: "Notificações",       icon: Bell       },
   { id: "ai",            label: "Inteligência Artificial", icon: Sparkles },
-  { id: "data",          label: "Dados e Privacidade",    icon: Shield  },
+  { id: "integrations",  label: "Integrações",        icon: Link2      },
+  { id: "data",          label: "Dados e Privacidade", icon: Shield    },
 ];
 
 function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
@@ -54,29 +59,46 @@ function SettingRow({ label, description, enabled, onChange }: {
   );
 }
 
-function FormField({ label, defaultValue }: { label: string; defaultValue: string }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
-      <input defaultValue={defaultValue}
-        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors" />
-    </div>
-  );
+function nameInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0 || !parts[0]) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 const ACCOUNT_LABELS: Record<string, string> = {
   checking: "Conta Corrente", savings: "Poupança",
   credit: "Crédito",         investment: "Investimentos",
 };
-
-// Identifies the 10 original system categories by their numeric IDs from mock-data
 const SYSTEM_IDS = new Set(["1","2","3","4","5","6","7","8","9","10"]);
 
 export default function SettingsPage() {
-  const { accounts, categories, deleteAccount, deleteCategory } = useFinanceStore();
+  const {
+    accounts, categories, deleteAccount, deleteCategory,
+    profile, updateProfile,
+    members, addMember, removeMember,
+  } = useFinanceStore();
 
-  const [tab,            setTab]            = useState<Tab>("profile");
-  const [saved,          setSaved]          = useState(false);
+  const [tab, setTab] = useState<Tab>("profile");
+
+  // Profile form state (controlled, synced from store)
+  const [profileName,  setProfileName]  = useState(profile.name);
+  const [profileEmail, setProfileEmail] = useState(profile.email);
+  const [profileSaved, setProfileSaved] = useState(false);
+
+  // Keep local form in sync when switching tabs
+  useEffect(() => {
+    setProfileName(profile.name);
+    setProfileEmail(profile.email);
+  }, [profile.name, profile.email]);
+
+  function handleProfileSave() {
+    updateProfile({ name: profileName.trim(), email: profileEmail.trim() });
+    setProfileSaved(true);
+    setTimeout(() => setProfileSaved(false), 2500);
+  }
+
+  // Notification toggles
   const [emailAlerts,    setEmailAlerts]    = useState(true);
   const [pushAlerts,     setPushAlerts]     = useState(true);
   const [weeklyDigest,   setWeeklyDigest]   = useState(false);
@@ -85,15 +107,48 @@ export default function SettingsPage() {
   const [autoSuggest,    setAutoSuggest]    = useState(true);
   const [learnOverrides, setLearnOverrides] = useState(true);
 
+  // Modals
   const [showNewAccount,  setShowNewAccount]  = useState(false);
   const [editingAccount,  setEditingAccount]  = useState<Account | null>(null);
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  // Members
+  const [newMemberName,  setNewMemberName]  = useState("");
+  const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [newMemberRole,  setNewMemberRole]  = useState<"owner" | "member">("member");
+  const [memberAdded,    setMemberAdded]    = useState(false);
+
+  function handleAddMember() {
+    if (!newMemberName.trim() || !newMemberEmail.trim()) return;
+    addMember({ name: newMemberName.trim(), email: newMemberEmail.trim(), role: newMemberRole });
+    setNewMemberName(""); setNewMemberEmail(""); setNewMemberRole("member");
+    setMemberAdded(true);
+    setTimeout(() => setMemberAdded(false), 2000);
   }
+
+  // System config (API key)
+  const [sysConfig, setSysConfig] = useState<{ ingestApiKey: string; ingestUrl: string } | null>(null);
+  const [keyCopied,  setKeyCopied]  = useState(false);
+
+  useEffect(() => {
+    if (tab === "integrations" && !sysConfig) {
+      fetch("/api/config", { credentials: "include" })
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => { if (d) setSysConfig(d); })
+        .catch(() => {});
+    }
+  }, [tab, sysConfig]);
+
+  function copyKey() {
+    if (!sysConfig?.ingestApiKey) return;
+    navigator.clipboard.writeText(sysConfig.ingestApiKey).then(() => {
+      setKeyCopied(true);
+      setTimeout(() => setKeyCopied(false), 2000);
+    });
+  }
+
+  const initials = nameInitials(profile.name || "?");
 
   return (
     <div className="space-y-6">
@@ -116,65 +171,162 @@ export default function SettingsPage() {
           ))}
         </nav>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          {/* Profile */}
+        <div className="flex-1 min-w-0 space-y-4">
+
+          {/* ── Profile ── */}
           {tab === "profile" && (
             <Card>
               <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-6">Informações do Perfil</h2>
               <div className="flex items-center gap-4 pb-5 mb-5 border-b border-slate-100 dark:border-slate-700">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
-                  MO
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center text-white font-bold text-lg shrink-0 select-none">
+                  {initials}
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-900 dark:text-white">Matheus Oliveira</p>
-                  <p className="text-sm text-slate-400 dark:text-slate-500">moliveira902@gmail.com</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">
+                    {profile.name || <span className="text-slate-400 italic">Nome não definido</span>}
+                  </p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500">
+                    {profile.email || <span className="italic">Email não definido</span>}
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-1 @sm:grid-cols-2 gap-4 mb-6">
-                <FormField label="Nome completo"  defaultValue="Matheus Oliveira"       />
-                <FormField label="Email"          defaultValue="moliveira902@gmail.com" />
-                <FormField label="Fuso horário"   defaultValue="America/Sao_Paulo"      />
-                <FormField label="Moeda padrão"   defaultValue="BRL — Real Brasileiro"  />
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Nome completo</label>
+                  <input
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="Seu nome completo"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+                  <input
+                    type="email"
+                    value={profileEmail}
+                    onChange={(e) => setProfileEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Fuso horário</label>
+                  <input defaultValue="America/Sao_Paulo"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Moeda padrão</label>
+                  <input defaultValue="BRL — Real Brasileiro"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors" />
+                </div>
               </div>
               <div className="flex items-center justify-end gap-3">
-                {saved && (
+                {profileSaved && (
                   <span className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                     <Check size={13} /> Alterações salvas
                   </span>
                 )}
-                <Button size="sm" onClick={handleSave}>Salvar Alterações</Button>
+                <Button size="sm" onClick={handleProfileSave}>Salvar Alterações</Button>
               </div>
             </Card>
           )}
 
-          {/* Notifications */}
-          {tab === "notifications" && (
+          {/* ── Members ── */}
+          {tab === "members" && (
             <Card>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Preferências de Notificação</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Escolha como e quando deseja ser notificado.</p>
-              <SettingRow label="Alertas de orçamento por email"
-                description="Receba emails ao atingir 80% e 100% de cada orçamento."
-                enabled={emailAlerts}   onChange={setEmailAlerts} />
-              <SettingRow label="Push notifications"
-                description="Alertas instantâneos no dispositivo para eventos importantes."
-                enabled={pushAlerts}    onChange={setPushAlerts} />
-              <SettingRow label="Resumo semanal"
-                description="Email toda segunda-feira com o resumo da semana anterior."
-                enabled={weeklyDigest}  onChange={setWeeklyDigest} />
-              <SettingRow label="Relatório mensal"
-                description="Receba o relatório completo no início de cada mês."
-                enabled={monthlyReport} onChange={setMonthlyReport} />
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Membros da Conta</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
+                Adicione pessoas que compartilham esta conta financeira.
+              </p>
+
+              {/* Current members */}
+              {members.length > 0 && (
+                <div className="space-y-2 mb-6">
+                  {members.map((m: Member) => (
+                    <div key={m.id}
+                      className="group flex items-center justify-between px-4 py-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                          {nameInitials(m.name)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{m.name}</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500">{m.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-[11px] font-medium px-2 py-0.5 rounded-full",
+                          m.role === "owner"
+                            ? "bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400"
+                            : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
+                        )}>
+                          {m.role === "owner" ? "Dono" : "Membro"}
+                        </span>
+                        <button onClick={() => removeMember(m.id)}
+                          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {members.length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-6 mb-4">Nenhum membro adicionado ainda.</p>
+              )}
+
+              {/* Add member form */}
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Adicionar novo membro</p>
+                <div className="grid grid-cols-1 @sm:grid-cols-2 gap-3">
+                  <input
+                    value={newMemberName}
+                    onChange={(e) => setNewMemberName(e.target.value)}
+                    placeholder="Nome completo"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 transition-colors"
+                  />
+                  <input
+                    type="email"
+                    value={newMemberEmail}
+                    onChange={(e) => setNewMemberEmail(e.target.value)}
+                    placeholder="email@exemplo.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 transition-colors"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <select
+                    value={newMemberRole}
+                    onChange={(e) => setNewMemberRole(e.target.value as "owner" | "member")}
+                    className="h-9 pl-3 pr-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200 focus:outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="member">Membro</option>
+                    <option value="owner">Dono</option>
+                  </select>
+                  <Button size="sm" onClick={handleAddMember} disabled={!newMemberName.trim() || !newMemberEmail.trim()}>
+                    <Plus size={13} /> Adicionar
+                  </Button>
+                  {memberAdded && (
+                    <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                      <Check size={12} /> Membro adicionado
+                    </span>
+                  )}
+                </div>
+              </div>
             </Card>
           )}
 
-          {/* Accounts */}
+          {/* ── Accounts ── */}
           {tab === "accounts" && (
             <Card>
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h2 className="text-base font-semibold text-slate-900 dark:text-white">Contas Vinculadas</h2>
-                  <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">{accounts.length} conta{accounts.length !== 1 ? "s" : ""} cadastrada{accounts.length !== 1 ? "s" : ""}</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">
+                    {accounts.length} conta{accounts.length !== 1 ? "s" : ""} cadastrada{accounts.length !== 1 ? "s" : ""}
+                  </p>
                 </div>
                 <Button size="sm" onClick={() => setShowNewAccount(true)}>
                   <Plus size={13} /> Nova Conta
@@ -220,7 +372,7 @@ export default function SettingsPage() {
             </Card>
           )}
 
-          {/* Categories — master data */}
+          {/* ── Categories ── */}
           {tab === "categories" && (
             <Card>
               <div className="flex items-center justify-between mb-5">
@@ -234,17 +386,14 @@ export default function SettingsPage() {
                   <Plus size={13} /> Nova Categoria
                 </Button>
               </div>
-
               <div className="space-y-1.5">
-                {/* System categories */}
                 <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1 mb-2">
                   Categorias do sistema
                 </p>
                 {categories.filter((c) => SYSTEM_IDS.has(c.id)).map((cat) => (
                   <div key={cat.id}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <span className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
-                      style={{ background: cat.color + "20" }}>
+                    <span className="w-8 h-8 rounded-lg flex items-center justify-center text-lg" style={{ background: cat.color + "20" }}>
                       {cat.icon}
                     </span>
                     <span className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-200">{cat.name}</span>
@@ -253,8 +402,6 @@ export default function SettingsPage() {
                     </span>
                   </div>
                 ))}
-
-                {/* User categories */}
                 {categories.filter((c) => !SYSTEM_IDS.has(c.id)).length > 0 && (
                   <>
                     <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1 mt-4 mb-2">
@@ -263,8 +410,7 @@ export default function SettingsPage() {
                     {categories.filter((c) => !SYSTEM_IDS.has(c.id)).map((cat) => (
                       <div key={cat.id}
                         className="group flex items-center gap-3 px-3 py-2.5 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
-                        <span className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
-                          style={{ background: cat.color + "20" }}>
+                        <span className="w-8 h-8 rounded-lg flex items-center justify-center text-lg" style={{ background: cat.color + "20" }}>
                           {cat.icon}
                         </span>
                         <span className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-200">{cat.name}</span>
@@ -287,7 +433,27 @@ export default function SettingsPage() {
             </Card>
           )}
 
-          {/* AI */}
+          {/* ── Notifications ── */}
+          {tab === "notifications" && (
+            <Card>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Preferências de Notificação</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Escolha como e quando deseja ser notificado.</p>
+              <SettingRow label="Alertas de orçamento por email"
+                description="Receba emails ao atingir 80% e 100% de cada orçamento."
+                enabled={emailAlerts}   onChange={setEmailAlerts} />
+              <SettingRow label="Push notifications"
+                description="Alertas instantâneos no dispositivo para eventos importantes."
+                enabled={pushAlerts}    onChange={setPushAlerts} />
+              <SettingRow label="Resumo semanal"
+                description="Email toda segunda-feira com o resumo da semana anterior."
+                enabled={weeklyDigest}  onChange={setWeeklyDigest} />
+              <SettingRow label="Relatório mensal"
+                description="Receba o relatório completo no início de cada mês."
+                enabled={monthlyReport} onChange={setMonthlyReport} />
+            </Card>
+          )}
+
+          {/* ── AI ── */}
           {tab === "ai" && (
             <Card>
               <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Inteligência Artificial</h2>
@@ -311,7 +477,82 @@ export default function SettingsPage() {
             </Card>
           )}
 
-          {/* Data & Privacy */}
+          {/* ── Integrations ── */}
+          {tab === "integrations" && (
+            <Card>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Integrações</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
+                Conecte ferramentas externas como n8n para importar transações automaticamente.
+              </p>
+
+              {/* n8n section */}
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 flex items-center gap-3">
+                  <RefreshCw size={15} className="text-slate-400" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Ingestão via n8n</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                      Envie transações de qualquer automação usando uma chave de API estática.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="px-5 py-4 space-y-4">
+                  {/* Endpoint */}
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Endpoint</p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-mono text-slate-700 dark:text-slate-300 truncate">
+                        POST {typeof window !== "undefined" ? window.location.origin : ""}/api/ingest/transactions
+                      </code>
+                    </div>
+                  </div>
+
+                  {/* API key */}
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Chave de API</p>
+                    {sysConfig ? (
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-mono text-slate-700 dark:text-slate-300 truncate">
+                          {sysConfig.ingestApiKey}
+                        </code>
+                        <button onClick={copyKey}
+                          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                          {keyCopied ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs text-slate-400 italic">
+                        Carregando…
+                      </div>
+                    )}
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      Envie no header: <code className="text-slate-600 dark:text-slate-400">x-api-key: &lt;chave&gt;</code>
+                    </p>
+                  </div>
+
+                  {/* Payload example */}
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Exemplo de payload (JSON)</p>
+                    <pre className="px-3 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-mono text-slate-600 dark:text-slate-400 overflow-x-auto">{`{
+  "description": "Supermercado Extra",
+  "amount": 387.50,
+  "type": "expense",
+  "date": "2026-04-28",
+  "category": "Alimentação",
+  "account": "Conta Corrente"
+}`}</pre>
+                  </div>
+
+                  <div className="pt-1 text-xs text-slate-400 dark:text-slate-500">
+                    Para alterar a chave, defina a variável de ambiente <code className="text-slate-500">INGEST_API_KEY</code> e reinicie o servidor.
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* ── Data & Privacy ── */}
           {tab === "data" && (
             <Card>
               <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Dados e Privacidade</h2>

@@ -3,9 +3,11 @@ import { Sidebar }     from "./Sidebar";
 import { Topbar }      from "./Topbar";
 import { MobileFrame } from "./MobileFrame";
 import { useAppContext } from "@/contexts/AppContext";
+import { useIngestPoller } from "@/hooks/useIngestPoller";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { viewport } = useAppContext();
+  useIngestPoller();
   const isMobile = viewport === "mobile";
 
   return (

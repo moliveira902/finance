@@ -7,13 +7,17 @@ import { budgetsRouter } from "./budgets.js";
 import { dashboardRouter } from "./dashboard.js";
 import { reportsRouter } from "./reports.js";
 import { usersRouter } from "./users.js";
+import { ingestRouter } from "./ingest.js";
 import { authenticate } from "../middleware/auth.js";
 
 export const router = Router();
 
 router.use("/auth", authRouter);
 
-// All routes below this line require authentication
+// Ingest — authenticated via static API key (no JWT required)
+router.use("/ingest", ingestRouter);
+
+// All routes below this line require JWT authentication
 router.use(authenticate);
 
 router.use("/users", usersRouter);

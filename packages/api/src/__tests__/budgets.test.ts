@@ -7,12 +7,13 @@ import { makeAuthHeader, DEMO_USER_ID } from "./helpers.js";
 const app = createApp();
 const auth = makeAuthHeader();
 
-const mockCategory = { id: "cat-1", name: "Alimentação", slug: "alimentacao", color: "#F59E0B", icon: "utensils", isSystem: true, userId: null, parentId: null, createdAt: new Date() };
+const CATEGORY_ID = "00000000-0000-0000-0000-000000000100";
+const mockCategory = { id: CATEGORY_ID, name: "Alimentação", slug: "alimentacao", color: "#F59E0B", icon: "utensils", isSystem: true, userId: null, parentId: null, createdAt: new Date() };
 
 const mockBudget = {
-  id: "bud-1",
+  id: "00000000-0000-0000-0000-000000000200",
   userId: DEMO_USER_ID,
-  categoryId: "cat-1",
+  categoryId: CATEGORY_ID,
   name: "Alimentação",
   amountCents: 120000,
   period: "monthly",
@@ -56,7 +57,7 @@ describe("POST /api/v1/budgets", () => {
     const res = await request(app)
       .post("/api/v1/budgets")
       .set("Authorization", auth)
-      .send({ categoryId: "cat-1", name: "Alimentação", amountCents: 120000 });
+      .send({ categoryId: CATEGORY_ID, name: "Alimentação", amountCents: 120000 });
 
     expect(res.status).toBe(201);
   });
@@ -67,7 +68,7 @@ describe("POST /api/v1/budgets", () => {
     const res = await request(app)
       .post("/api/v1/budgets")
       .set("Authorization", auth)
-      .send({ categoryId: "cat-1", name: "Alimentação", amountCents: 120000 });
+      .send({ categoryId: CATEGORY_ID, name: "Alimentação", amountCents: 120000 });
 
     expect(res.status).toBe(409);
   });
