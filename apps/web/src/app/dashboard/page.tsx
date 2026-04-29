@@ -8,10 +8,8 @@ import Link from "next/link";
 import { Card, CardLabel, CardValue } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/ui/PageHeader";
-import {
-  accounts, transactions, monthlyTrend, categoryBreakdown,
-  formatBRL, formatDate,
-} from "@/lib/mock-data";
+import { useFinanceStore } from "@/stores/financeStore";
+import { formatBRL, formatDate, type Transaction } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 function KpiCard({ label, value, sub, positive }: {
@@ -40,29 +38,71 @@ const TOOLTIP = {
   boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.06)",
 };
 
+function currentMonthLabel() {
+  return new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+}
+
+function buildMonthlyTrend(txs: Transaction[]) {
+  return Array.from({ length: 6 }, (_, i) => {
+    const now = new Date();
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    const y = d.getFullYear(), m = d.getMonth();
+    const month = d.toLocaleString("pt-BR", { month: "short" });
+    const label = month.charAt(0).toUpperCase() + month.slice(1);
+    const periodTxs = txs.filter((t) => {
+      const td = new Date(t.date);
+      return td.getFullYear() === y && td.getMonth() === m;
+    });
+    const income   = periodTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
+    const expenses = periodTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Math.abs(t.amount), 0);
+    return { month: label, income, expenses };
+  });
+}
+
+function buildCategoryBreakdown(txs: Transaction[]) {
+  const map = new Map<string, { name: string; value: number; color: string }>();
+  txs.filter((t) => t.type === "expense").forEach((t) => {
+    const key = t.category.id;
+    const prev = map.get(key) ?? { name: t.category.name, value: 0, color: t.category.color };
+    map.set(key, { ...prev, value: prev.value + Math.abs(t.amount) });
+  });
+  return Array.from(map.values()).sort((a, b) => b.value - a.value).slice(0, 6);
+}
+
 export default function DashboardPage() {
-  const totalAssets = accounts.reduce((s, a) => s + Math.max(0, a.balance),  0);
-  const totalDebt   = accounts.reduce((s, a) => s + Math.max(0, -a.balance), 0);
-  const netWorth    = totalAssets - totalDebt;
-  const income      = transactions.filter((t) => t.type === "income" ).reduce((s, t) => s + t.amount,  0);
-  const expenses    = Math.abs(transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0));
-  const recent      = transactions.slice(0, 5);
+  const { transactions, accounts } = useFinanceStore();
+
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const monthTxs = transactions.filter((t) => {
+    const d = new Date(t.date);
+    return d.getFullYear() === y && d.getMonth() === m;
+  });
+
+  const totalAssets  = accounts.reduce((s, a) => s + Math.max(0, a.balance), 0);
+  const totalDebt    = accounts.reduce((s, a) => s + Math.max(0, -a.balance), 0);
+  const netWorth     = totalAssets - totalDebt;
+  const income       = monthTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
+  const expenses     = Math.abs(monthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0));
+  const recent       = [...transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const monthlyTrend = buildMonthlyTrend(transactions);
+  const catBreakdown = buildCategoryBreakdown(monthTxs);
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" subtitle="Visão geral das suas finanças — Abril 2026" />
+      <PageHeader title="Dashboard" subtitle={`Visão geral das suas finanças — ${currentMonthLabel()}`} />
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard label="Patrimônio Líquido" value={formatBRL(netWorth)}          sub="+4.2% este mês"               positive />
-        <KpiCard label="Receitas (Abr)"     value={formatBRL(income)}            sub="Salário + freelance"                    />
-        <KpiCard label="Despesas (Abr)"     value={formatBRL(expenses)}          sub="8% abaixo do mês anterior"    positive />
-        <KpiCard label="Saldo Livre"        value={formatBRL(income - expenses)} sub="Disponível para investir"              />
+      <div className="grid grid-cols-2 @3xl:grid-cols-4 gap-4">
+        <KpiCard label="Patrimônio Líquido" value={formatBRL(netWorth)}      sub="Ativos − dívidas"          />
+        <KpiCard label="Receitas do mês"     value={formatBRL(income)}        sub="Salário + freelance"       />
+        <KpiCard label="Despesas do mês"     value={formatBRL(expenses)}      sub="Total de saídas"           positive={expenses < income} />
+        <KpiCard label="Saldo Livre"         value={formatBRL(income - expenses)} sub="Disponível para investir" positive={income - expenses > 0} />
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="md:col-span-2">
+      <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-4">
+        <Card className="@3xl:col-span-2">
           <CardLabel className="mb-4">Fluxo de Caixa — 6 meses</CardLabel>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
@@ -81,7 +121,7 @@ export default function DashboardPage() {
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
                   tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={TOOLTIP} formatter={(v: number) => [formatBRL(v)]} />
+                <Tooltip contentStyle={TOOLTIP} formatter={(v) => [formatBRL(Number(v))]} />
                 <Area type="monotone" dataKey="income"   stroke="#10b981" strokeWidth={2} fill="url(#gI)" name="Receitas" />
                 <Area type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} fill="url(#gE)" name="Despesas" />
               </AreaChart>
@@ -91,30 +131,36 @@ export default function DashboardPage() {
 
         <Card>
           <CardLabel className="mb-4">Gastos por Categoria</CardLabel>
-          <div className="flex justify-center">
-            <PieChart width={150} height={150}>
-              <Pie data={categoryBreakdown} cx={70} cy={70} innerRadius={44} outerRadius={68} dataKey="value" stroke="none">
-                {categoryBreakdown.map((_, i) => <Cell key={i} fill={categoryBreakdown[i].color} />)}
-              </Pie>
-              <Tooltip formatter={(v: number) => [formatBRL(v)]} contentStyle={TOOLTIP} />
-            </PieChart>
-          </div>
-          <div className="mt-2 space-y-2">
-            {categoryBreakdown.slice(0, 4).map((c) => (
-              <div key={c.name} className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-                  <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
-                  {c.name}
-                </span>
-                <span className="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">{formatBRL(c.value)}</span>
+          {catBreakdown.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-8">Sem despesas neste mês.</p>
+          ) : (
+            <>
+              <div className="flex justify-center">
+                <PieChart width={150} height={150}>
+                  <Pie data={catBreakdown} cx={70} cy={70} innerRadius={44} outerRadius={68} dataKey="value" stroke="none">
+                    {catBreakdown.map((_, i) => <Cell key={i} fill={catBreakdown[i].color} />)}
+                  </Pie>
+                  <Tooltip formatter={(v) => [formatBRL(Number(v))]} contentStyle={TOOLTIP} />
+                </PieChart>
               </div>
-            ))}
-          </div>
+              <div className="mt-2 space-y-2">
+                {catBreakdown.slice(0, 4).map((c) => (
+                  <div key={c.name} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+                      <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
+                      {c.name}
+                    </span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">{formatBRL(c.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </Card>
       </div>
 
       {/* Accounts + Recent */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-4">
         <Card>
           <CardLabel className="mb-4">Contas</CardLabel>
           <div className="space-y-3">
@@ -138,7 +184,7 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="md:col-span-2">
+        <Card className="@3xl:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <CardLabel>Transações Recentes</CardLabel>
             <Link href="/transactions"
@@ -146,30 +192,34 @@ export default function DashboardPage() {
               Ver todas <ArrowUpRight size={12} />
             </Link>
           </div>
-          <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
-            {recent.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between py-2.5">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg leading-none">{tx.category.icon}</span>
-                  <div>
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{tx.description}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-xs text-slate-400 dark:text-slate-500">{formatDate(tx.date)}</span>
-                      {tx.aiCategory && (
-                        <Badge variant="info" className="text-[10px] py-0 px-1.5 gap-0.5">
-                          <Sparkles size={8} /> {tx.aiCategory}
-                        </Badge>
-                      )}
+          {recent.length === 0 ? (
+            <p className="text-sm text-slate-400 py-4 text-center">Nenhuma transação ainda.</p>
+          ) : (
+            <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+              {recent.map((tx) => (
+                <div key={tx.id} className="flex items-center justify-between py-2.5">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg leading-none">{tx.category.icon}</span>
+                    <div>
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{tx.description}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-xs text-slate-400 dark:text-slate-500">{formatDate(tx.date)}</span>
+                        {tx.aiCategory && (
+                          <Badge variant="info" className="text-[10px] py-0 px-1.5 gap-0.5">
+                            <Sparkles size={8} /> {tx.aiCategory}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <span className={cn("text-sm font-semibold tabular-nums",
+                    tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>
+                    {tx.type === "income" ? "+" : "−"}{formatBRL(Math.abs(tx.amount))}
+                  </span>
                 </div>
-                <span className={cn("text-sm font-semibold tabular-nums",
-                  tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>
-                  {tx.type === "income" ? "+" : "−"}{formatBRL(Math.abs(tx.amount))}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     </div>

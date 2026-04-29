@@ -63,10 +63,8 @@ export function MobileFrame({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              {/* App content — scrollable */}
-              <div
-                className="flex-1 overflow-y-auto scrollbar-hide px-4 pt-2 pb-1"
-              >
+              {/* App content — scrollable, @container so page grids respond to this width */}
+              <div className="flex-1 overflow-y-auto scrollbar-hide px-4 pt-2 pb-1 @container">
                 {children}
               </div>
 

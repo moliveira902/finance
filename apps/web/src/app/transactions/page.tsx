@@ -1,19 +1,30 @@
 "use client";
 import { useState } from "react";
-import { Search, Plus, Upload, Sparkles, ChevronDown } from "lucide-react";
+import { Search, Plus, Upload, Sparkles, ChevronDown, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { transactions, categories, formatBRL, formatDate } from "@/lib/mock-data";
+import { TransactionModal } from "@/components/modals/TransactionModal";
+import { CsvImportModal } from "@/components/modals/CsvImportModal";
+import { useFinanceStore } from "@/stores/financeStore";
+import { formatBRL, formatDate } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 type TypeFilter = "all" | "income" | "expense";
 
+function currentMonthLabel() {
+  return new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+}
+
 export default function TransactionsPage() {
+  const { transactions, categories, deleteTransaction } = useFinanceStore();
+
   const [search,     setSearch]     = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [catFilter,  setCatFilter]  = useState("all");
+  const [showNew,    setShowNew]    = useState(false);
+  const [showCsv,    setShowCsv]    = useState(false);
 
   const filtered = transactions.filter((tx) => {
     const matchSearch = tx.description.toLowerCase().includes(search.toLowerCase());
@@ -22,24 +33,28 @@ export default function TransactionsPage() {
     return matchSearch && matchType && matchCat;
   });
 
-  const totalIncome  = filtered.filter((t) => t.type === "income" ).reduce((s, t) =>  s + t.amount, 0);
+  const totalIncome  = filtered.filter((t) => t.type === "income" ).reduce((s, t) => s + t.amount, 0);
   const totalExpense = filtered.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Transações"
-        subtitle={`${transactions.length} transações em Abril 2026`}
+        subtitle={`${transactions.length} transações em ${currentMonthLabel()}`}
         actions={
           <>
-            <Button variant="secondary" size="sm"><Upload size={14} /> Importar CSV</Button>
-            <Button size="sm"><Plus size={14} /> Nova Transação</Button>
+            <Button variant="secondary" size="sm" onClick={() => setShowCsv(true)}>
+              <Upload size={14} /> Importar CSV
+            </Button>
+            <Button size="sm" onClick={() => setShowNew(true)}>
+              <Plus size={14} /> Nova Transação
+            </Button>
           </>
         }
       />
 
       {/* Summary strip */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 @sm:grid-cols-3 gap-4">
         {[
           { label: "Receitas filtradas", value: formatBRL(totalIncome),             color: "text-emerald-600 dark:text-emerald-400" },
           { label: "Despesas filtradas", value: formatBRL(Math.abs(totalExpense)),  color: "text-red-500 dark:text-red-400"          },
@@ -97,18 +112,19 @@ export default function TransactionsPage() {
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/50">
                 <th className="text-left text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Descrição</th>
-                <th className="text-left text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-4 py-3">Categoria</th>
-                <th className="text-left text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-4 py-3">Conta</th>
+                <th className="hidden @3xl:table-cell text-left text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-4 py-3">Categoria</th>
+                <th className="hidden @3xl:table-cell text-left text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-4 py-3">Conta</th>
                 <th className="text-left text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-4 py-3">Data</th>
-                <th className="text-left text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-4 py-3">IA</th>
+                <th className="hidden @3xl:table-cell text-left text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-4 py-3">IA</th>
                 <th className="text-right text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-5 py-3">Valor</th>
+                <th className="w-10" />
               </tr>
             </thead>
             <tbody>
               {filtered.map((tx, idx) => (
                 <tr key={tx.id}
                   className={cn(
-                    "transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-700/30",
+                    "group transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-700/30",
                     idx !== filtered.length - 1 && "border-b border-slate-50 dark:border-slate-700/50"
                   )}>
                   <td className="px-5 py-3">
@@ -117,15 +133,19 @@ export default function TransactionsPage() {
                       <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{tx.description}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="hidden @3xl:table-cell px-4 py-3">
                     <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium"
                       style={{ background: tx.category.color + "20", color: tx.category.color }}>
                       {tx.category.name}
                     </span>
                   </td>
-                  <td className="px-4 py-3"><span className="text-sm text-slate-500 dark:text-slate-400">{tx.account.institution}</span></td>
-                  <td className="px-4 py-3"><span className="text-sm text-slate-500 dark:text-slate-400">{formatDate(tx.date)}</span></td>
+                  <td className="hidden @3xl:table-cell px-4 py-3">
+                    <span className="text-sm text-slate-500 dark:text-slate-400">{tx.account.institution}</span>
+                  </td>
                   <td className="px-4 py-3">
+                    <span className="text-sm text-slate-500 dark:text-slate-400">{formatDate(tx.date)}</span>
+                  </td>
+                  <td className="hidden @3xl:table-cell px-4 py-3">
                     {tx.aiCategory && (
                       <Badge variant="info" className="text-[10px] gap-0.5 py-0 px-1.5">
                         <Sparkles size={9} /> {Math.round((tx.aiConfidence ?? 0) * 100)}%
@@ -138,15 +158,22 @@ export default function TransactionsPage() {
                       {tx.type === "income" ? "+" : "−"}{formatBRL(Math.abs(tx.amount))}
                     </span>
                   </td>
+                  <td className="pr-3">
+                    <button
+                      onClick={() => deleteTransaction(tx.id)}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all">
+                      <Trash2 size={13} />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-16 text-center">
+                  <td colSpan={7} className="px-5 py-16 text-center">
                     <div className="flex flex-col items-center gap-2 text-slate-400 dark:text-slate-500">
                       <Search size={24} className="opacity-40" />
                       <p className="text-sm">Nenhuma transação encontrada.</p>
-                      <p className="text-xs">Tente ajustar os filtros.</p>
+                      <p className="text-xs">Tente ajustar os filtros ou adicione uma nova transação.</p>
                     </div>
                   </td>
                 </tr>
@@ -160,6 +187,9 @@ export default function TransactionsPage() {
           </div>
         )}
       </Card>
+
+      <TransactionModal open={showNew} onClose={() => setShowNew(false)} />
+      <CsvImportModal   open={showCsv} onClose={() => setShowCsv(false)} />
     </div>
   );
 }

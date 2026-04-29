@@ -22,7 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <MobileFrame>{children}</MobileFrame>
           </div>
         ) : (
-          <main className="flex-1 px-8 py-7 max-w-[1200px] w-full mx-auto">
+          <main className="flex-1 px-8 py-7 max-w-[1200px] w-full mx-auto @container">
             {children}
           </main>
         )}
