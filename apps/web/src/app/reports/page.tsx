@@ -17,6 +17,14 @@ const TOOLTIP = {
   boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.06)",
 };
 
+function brlFormatter(v: unknown): [string] {
+  return [formatBRL(Number(v || 0))];
+}
+
+function kFormatter(v: unknown): string {
+  return `R$${(Number(v || 0) / 1000).toFixed(0)}k`;
+}
+
 function buildMonthlyTrend(txs: Transaction[]) {
   return Array.from({ length: 6 }, (_, i) => {
     const now = new Date();
@@ -136,8 +144,8 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
-                  tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={TOOLTIP} formatter={(v) => [formatBRL(Number(v || 0))]} />
+                  tickFormatter={kFormatter} />
+                <Tooltip contentStyle={TOOLTIP} formatter={brlFormatter} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
                 <Bar dataKey="income"   name="Receitas" fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="expenses" name="Despesas" fill="#f87171" radius={[4, 4, 0, 0]} />
@@ -157,7 +165,7 @@ export default function ReportsPage() {
                   <Pie data={catBreakdown} cx="50%" cy="45%" outerRadius={90} innerRadius={50} dataKey="value" stroke="none">
                     {catBreakdown.map((_, i) => <Cell key={i} fill={catBreakdown[i].color} />)}
                   </Pie>
-                  <Tooltip formatter={(v) => [formatBRL(Number(v || 0))]} contentStyle={TOOLTIP} />
+                  <Tooltip formatter={brlFormatter} contentStyle={TOOLTIP} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
