@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { getStore, setStore, DEFAULT_CATEGORIES } from "@/lib/kv-store";
+import type { Category, Account, Transaction, StoreData } from "@/lib/kv-store";
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -8,75 +8,8 @@ const API_KEY           = process.env.API_KEY ?? "fa-ingest-dev-key-change-in-pr
 const RATE_LIMIT_MAX    = 60;
 const RATE_LIMIT_WINDOW = 60_000;
 
-// ── Store (writes directly to same /tmp file the UI reads) ────────────────────
-
-// The single demo user — ingest always writes to this user's store
-const STORE_PATH = join(
-  "/tmp",
-  "fa_00000000_0000_0000_0000_000000000002.json"
-);
-
-type Category = { id: string; name: string; icon: string; color: string };
-type Account  = { id: string; name: string; type: string; balance: number; institution: string };
-type Transaction = {
-  id: string; description: string; amount: number;
-  type: "income" | "expense"; category: Category; account: Account; date: string;
-};
-interface StoreData {
-  transactions: Transaction[]; accounts: Account[]; categories: Category[];
-  budgets: unknown[]; profile: { name: string; email: string }; members: unknown[];
-}
-
-const DEFAULT_CATEGORIES: Category[] = [
-  { id: "1",  name: "Alimentação", icon: "🍔", color: "#f97316" },
-  { id: "2",  name: "Transporte",  icon: "🚗", color: "#3b82f6" },
-  { id: "3",  name: "Moradia",     icon: "🏠", color: "#8b5cf6" },
-  { id: "4",  name: "Saúde",       icon: "💊", color: "#ef4444" },
-  { id: "5",  name: "Lazer",       icon: "🎬", color: "#ec4899" },
-  { id: "6",  name: "Educação",    icon: "📚", color: "#14b8a6" },
-  { id: "7",  name: "Vestuário",   icon: "👔", color: "#f59e0b" },
-  { id: "8",  name: "Salário",     icon: "💼", color: "#10b981" },
-  { id: "9",  name: "Freelance",   icon: "💻", color: "#0ea5e9" },
-  { id: "10", name: "Outros",      icon: "📦", color: "#64748b" },
-];
-
-function readStore(): StoreData {
-  if (existsSync(STORE_PATH)) {
-    try {
-      const parsed = JSON.parse(readFileSync(STORE_PATH, "utf-8"));
-      return {
-        transactions: parsed.transactions ?? [],
-        accounts:     parsed.accounts     ?? [],
-        categories:   parsed.categories?.length ? parsed.categories : DEFAULT_CATEGORIES,
-        budgets:      parsed.budgets      ?? [],
-        profile:      parsed.profile      ?? { name: "", email: "" },
-        members:      parsed.members      ?? [],
-      };
-    } catch { /* corrupt file — fall through */ }
-  }
-  return { transactions: [], accounts: [], categories: DEFAULT_CATEGORIES,
-           budgets: [], profile: { name: "", email: "" }, members: [] };
-}
-
-function writeStore(data: StoreData): void {
-  try { writeFileSync(STORE_PATH, JSON.stringify(data), "utf-8"); } catch { /* /tmp unavailable */ }
-}
-
-function storeUid(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
-function findOrCreateCategory(categories: Category[], name?: string): Category {
-  if (!name) return categories.find((c) => c.name === "Outros") ?? DEFAULT_CATEGORIES[9];
-  const found = categories.find((c) => c.name.toLowerCase() === name.toLowerCase());
-  return found ?? { id: storeUid(), name, icon: "📦", color: "#64748b" };
-}
-
-function findOrCreateAccount(accounts: Account[], name?: string): Account {
-  if (!name) return accounts[0] ?? { id: storeUid(), name: "Geral", type: "checking", balance: 0, institution: "" };
-  const found = accounts.find((a) => a.name.toLowerCase() === name.toLowerCase());
-  return found ?? { id: storeUid(), name, type: "checking", balance: 0, institution: name };
-}
+// The single demo user — ingest writes to this user's store
+const PRIMARY_USER_ID   = "00000000-0000-0000-0000-000000000002";
 
 // ── Rate limiter ──────────────────────────────────────────────────────────────
 
@@ -125,33 +58,61 @@ function resolveType(raw: unknown): "income" | "expense" {
   return ["income", "receita", "renda", "entrada"].includes(v) ? "income" : "expense";
 }
 
+function storeUid(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function findOrCreateCategory(categories: Category[], name?: string): Category {
+  if (!name) return categories.find((c) => c.name === "Outros") ?? DEFAULT_CATEGORIES[9];
+  const found = categories.find((c) => c.name.toLowerCase() === name.toLowerCase());
+  return found ?? { id: storeUid(), name, icon: "📦", color: "#64748b" };
+}
+
+function findOrCreateAccount(accounts: Account[], name?: string): Account {
+  if (!name) return accounts[0] ?? { id: storeUid(), name: "Geral", type: "checking", balance: 0, institution: "" };
+  const found = accounts.find((a) => a.name.toLowerCase() === name.toLowerCase());
+  return found ?? { id: storeUid(), name, type: "checking", balance: 0, institution: name };
+}
+
 // ── POST /api/ingest/transactions ─────────────────────────────────────────────
+//
+// Required headers:
+//   x-api-key   — shared secret (API_KEY env var)
+//
+// Body: single transaction object OR array of transaction objects
+//   { description, amount, type, date, category?, account? }
+//
+// type accepts English or Portuguese: expense/despesa/gasto, income/receita/entrada
 
 export async function POST(request: Request) {
   const ip = clientIp(request);
 
+  // 1 ── Rate limit
   if (isRateLimited(ip)) {
     log("rate_limited", { ip });
     return err(429, "RATE_LIMIT", "Too many requests — try again in 1 minute");
   }
 
+  // 2 ── Content-Type guard
   const ct = (request.headers.get("content-type") ?? "").toLowerCase();
   if (!ct.includes("application/json")) {
     log("bad_content_type", { ip, ct });
     return err(400, "BAD_REQUEST", "Content-Type must be application/json");
   }
 
+  // 3 ── API key
   const key = (request.headers.get("x-api-key") ?? "").trim();
   if (!key || key !== API_KEY) {
     log("auth_failure", { ip });
     return err(401, "UNAUTHORIZED", "Invalid or missing x-api-key");
   }
 
+  // 4 ── Parse body
   let body: unknown;
   try { body = await request.json(); }
   catch { log("invalid_json", { ip }); return err(400, "BAD_REQUEST", "Body must be valid JSON"); }
 
-  // Accept single object or array (n8n sends arrays)
+  // Accept single object or array (n8n sends arrays by default)
   const items: Record<string, unknown>[] = Array.isArray(body)
     ? (body as Record<string, unknown>[])
     : (typeof body === "object" && body !== null ? [body as Record<string, unknown>] : []);
@@ -160,7 +121,7 @@ export async function POST(request: Request) {
     return err(400, "BAD_REQUEST", "Body must be a JSON object or a non-empty array of objects");
   }
 
-  // Validate all items before writing anything
+  // 5 ── Validate all items before writing anything
   for (let i = 0; i < items.length; i++) {
     const t = items[i];
     if (!isPositiveFinite(t.amount)) {
@@ -173,8 +134,8 @@ export async function POST(request: Request) {
     }
   }
 
-  // Read store once, apply all items, write once
-  const store = readStore();
+  // 6 ── Load store, apply all items, persist once
+  const store: StoreData = await getStore(PRIMARY_USER_ID);
   let queued = 0;
 
   for (const t of items) {
@@ -184,11 +145,10 @@ export async function POST(request: Request) {
     const category     = findOrCreateCategory(store.categories, categoryName);
     const account      = findOrCreateAccount(store.accounts, accountName);
 
-    // Persist new category/account if created on the fly
     if (!store.categories.find((c) => c.id === category.id)) store.categories.push(category);
     if (!store.accounts.find((a) => a.id === account.id))    store.accounts.push(account);
 
-    // Expenses are stored as negative numbers (matches UI convention)
+    // Expenses are stored as negative numbers — matches UI convention
     const signedAmount = (t.amount as number) * (type === "income" ? 1 : -1);
 
     const transaction: Transaction = {
@@ -201,7 +161,7 @@ export async function POST(request: Request) {
       date:        (t.date as string).slice(0, 10),
     };
 
-    store.transactions.unshift(transaction); // newest first
+    store.transactions.unshift(transaction);
     queued++;
 
     log("saved", {
@@ -210,7 +170,7 @@ export async function POST(request: Request) {
     });
   }
 
-  writeStore(store);
+  await setStore(PRIMARY_USER_ID, store);
 
   return NextResponse.json({ ok: true, queued }, { status: 202 });
 }
