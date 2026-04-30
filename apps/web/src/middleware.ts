@@ -6,8 +6,6 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "dev-secret-key-change-in-production-32+"
 );
 
-const PUBLIC_PATHS = ["/login", "/api/auth", "/api/ingest", "/test-ingest"];
-
 async function isValidSession(token: string): Promise<boolean> {
   try {
     await jwtVerify(token, JWT_SECRET, { algorithms: ["HS256"] });
@@ -18,24 +16,38 @@ async function isValidSession(token: string): Promise<boolean> {
 }
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get("financeapp_session")?.value;
   const { pathname } = request.nextUrl;
-
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
-
+  const token = request.cookies.get("financeapp_session")?.value;
   const authenticated = token ? await isValidSession(token) : false;
 
-  if (!authenticated && !isPublic) {
+  // Unauthenticated → redirect to login
+  if (!authenticated) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (authenticated && pathname === "/login") {
+  // Already logged in and hitting /login → go to dashboard
+  if (pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();
 }
 
+/**
+ * The matcher controls WHICH paths the middleware function above runs on.
+ * Paths not matched here are served directly — no middleware, no auth check.
+ *
+ * Excluded from middleware (publicly accessible):
+ *   - /_next/*          Next.js internals (static, image optimisation)
+ *   - /favicon.ico, *.ico, *.png
+ *   - /login            login page itself (handled via redirect logic above
+ *                       when already authenticated, otherwise served freely)
+ *   - /api/auth/*       login / logout API routes
+ *   - /api/ingest/*     n8n ingest endpoint — authenticated by x-api-key header
+ *   - /test-ingest      public API test page
+ */
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.ico|.*\\.png).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.ico|.*\\.png|login|api/auth|api/ingest|test-ingest).+)",
+  ],
 };
