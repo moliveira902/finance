@@ -6,7 +6,7 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "dev-secret-key-change-in-production-32+"
 );
 
-const PUBLIC_PATHS = ["/login", "/api/auth"];
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/ingest", "/test-ingest"];
 
 async function isValidSession(token: string): Promise<boolean> {
   try {
