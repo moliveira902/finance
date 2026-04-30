@@ -20,34 +20,40 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("financeapp_session")?.value;
   const authenticated = token ? await isValidSession(token) : false;
 
-  // Unauthenticated → redirect to login
-  if (!authenticated) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  // /login is inside the matcher so we can redirect authenticated users away
+  if (pathname === "/login") {
+    return authenticated
+      ? NextResponse.redirect(new URL("/dashboard", request.url))
+      : NextResponse.next();
   }
 
-  // Already logged in and hitting /login → go to dashboard
-  if (pathname === "/login") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // Every other matched route requires a valid session
+  if (!authenticated) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
 }
 
 /**
- * The matcher controls WHICH paths the middleware function above runs on.
- * Paths not matched here are served directly — no middleware, no auth check.
+ * matcher — the middleware function above only runs for paths that match.
+ * Anything NOT matched is served directly with zero middleware overhead.
  *
- * Excluded from middleware (publicly accessible):
- *   - /_next/*          Next.js internals (static, image optimisation)
- *   - /favicon.ico, *.ico, *.png
- *   - /login            login page itself (handled via redirect logic above
- *                       when already authenticated, otherwise served freely)
- *   - /api/auth/*       login / logout API routes
- *   - /api/ingest/*     n8n ingest endpoint — authenticated by x-api-key header
- *   - /test-ingest      public API test page
+ * Excluded (served without running middleware):
+ *   _next/static   Next.js static chunks
+ *   _next/image    Next.js image optimisation
+ *   *.ico *.png    favicons and static images
+ *   api/ingest/*   n8n ingest — protected by x-api-key, not JWT
+ *   api/auth/*     login / logout endpoints
+ *   test-ingest    public API test page
+ *
+ * Included (middleware runs, JWT required):
+ *   /login         so authenticated users get bounced to /dashboard
+ *   /dashboard, /transactions, /reports, /settings, /budgets, …
+ *   /api/store, /api/config, /api/ingest/pending, …
  */
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.ico|.*\\.png|login|api/auth|api/ingest|test-ingest).+)",
+    "/((?!_next/static|_next/image|.*\\.ico|.*\\.png|api/ingest|api/auth|test-ingest).+)",
   ],
 };
