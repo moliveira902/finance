@@ -87,52 +87,64 @@ export async function POST(request: Request) {
     return err(400, "BAD_REQUEST", "Body must be valid JSON");
   }
 
-  if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return err(400, "BAD_REQUEST", "Body must be a JSON object");
+  // Accept a single object OR an array of objects (n8n sends arrays by default)
+  const items: Record<string, unknown>[] = Array.isArray(body)
+    ? body as Record<string, unknown>[]
+    : (typeof body === "object" && body !== null ? [body as Record<string, unknown>] : null as never);
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return err(400, "BAD_REQUEST", "Body must be a JSON object or a non-empty array of objects");
   }
 
-  const t = body as Record<string, unknown>;
+  // 5 ── Validate and enqueue each item
 
-  // 5 ── Validate required fields
+  let queued = 0;
 
-  if (!isPositiveFinite(t.amount)) {
-    log("validation_error", { ip, field: "amount", value: t.amount });
-    return err(400, "BAD_REQUEST", '"amount" must be a number greater than 0');
+  for (let i = 0; i < items.length; i++) {
+    const t = items[i];
+
+    if (typeof t !== "object" || t === null) {
+      return err(400, "BAD_REQUEST", `Item at index ${i} must be an object`);
+    }
+
+    if (!isPositiveFinite(t.amount)) {
+      log("validation_error", { ip, index: i, field: "amount", value: t.amount });
+      return err(400, "BAD_REQUEST", `Item[${i}]: "amount" must be a number greater than 0`);
+    }
+
+    if (!isDateString(t.date)) {
+      log("validation_error", { ip, index: i, field: "date", value: t.date });
+      return err(400, "BAD_REQUEST", `Item[${i}]: "date" must be a string in YYYY-MM-DD format`);
+    }
+
+    const description = optString(t.description) ?? "Transação";
+    const category    = optString(t.category);
+    const account     = optString(t.account);
+    const typeRaw     = typeof t.type === "string" ? t.type.toLowerCase() : "";
+    const type: "income" | "expense" = typeRaw === "income" ? "income" : "expense";
+
+    enqueue({
+      description,
+      amount:       (t.amount as number) * (type === "income" ? 1 : -1),
+      type,
+      date:         (t.date as string).slice(0, 10),
+      categoryName: category,
+      accountName:  account,
+      source:       "n8n",
+    });
+
+    log("queued", {
+      ip,
+      index:    i,
+      amount:   t.amount,
+      type,
+      date:     t.date,
+      category: category ?? null,
+      success:  true,
+    });
+
+    queued++;
   }
 
-  if (!isDateString(t.date)) {
-    log("validation_error", { ip, field: "date", value: t.date });
-    return err(400, "BAD_REQUEST", '"date" must be a string in YYYY-MM-DD format');
-  }
-
-  // 6 ── Normalise optional fields
-
-  const description = optString(t.description) ?? "Transação";
-  const category    = optString(t.category);
-  const account     = optString(t.account);
-  const typeRaw     = typeof t.type === "string" ? t.type.toLowerCase() : "";
-  const type: "income" | "expense" = typeRaw === "income" ? "income" : "expense";
-
-  // 7 ── Enqueue
-
-  enqueue({
-    description,
-    amount:       t.amount * (type === "income" ? 1 : -1),
-    type,
-    date:         (t.date as string).slice(0, 10),
-    categoryName: category,
-    accountName:  account,
-    source:       "n8n",
-  });
-
-  log("queued", {
-    ip,
-    amount:   t.amount,
-    type,
-    date:     t.date,
-    category: category ?? null,
-    success:  true,
-  });
-
-  return NextResponse.json({ ok: true, queued: 1 }, { status: 202 });
+  return NextResponse.json({ ok: true, queued }, { status: 202 });
 }
