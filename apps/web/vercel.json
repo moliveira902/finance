@@ -1,6 +1,6 @@
 {
-  "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter @financeapp/shared-types build && next build",
+  "framework": "nextjs",
+  "buildCommand": "next build",
   "outputDirectory": ".next",
-  "framework": "nextjs"
+  "installCommand": "pnpm install --frozen-lockfile"
 }
