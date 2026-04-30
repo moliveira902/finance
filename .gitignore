@@ -10,6 +10,9 @@ apps/web/out/
 # production builds
 dist/
 build/
+# Exception: shared-types dist/ must be committed so Vercel can resolve
+# the package without a build step (pnpm workspace symlink + main: dist/index.js)
+!packages/shared-types/dist/
 
 # environment variables — never commit secrets
 .env
