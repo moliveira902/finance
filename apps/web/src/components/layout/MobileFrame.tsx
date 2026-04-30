@@ -14,6 +14,36 @@ const NAV = [
   { href: "/settings",     icon: Settings,        label: "Config."    },
 ];
 
+function NavTabs({ compact = false }: { compact?: boolean }) {
+  const pathname = usePathname();
+  const router   = useRouter();
+  return (
+    <div className={cn("flex items-center justify-around", compact ? "px-1" : "px-2")}>
+      {NAV.map(({ href, icon: Icon, label }) => {
+        const active = pathname === href || pathname.startsWith(href + "/");
+        return (
+          <button
+            key={href}
+            onClick={() => router.push(href)}
+            className={cn(
+              "flex flex-col items-center gap-0.5 rounded-xl transition-colors min-w-0",
+              compact ? "px-2 py-1" : "px-3 py-1.5",
+              active
+                ? "text-sky-500"
+                : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400"
+            )}
+          >
+            <Icon size={compact ? 20 : 22} strokeWidth={active ? 2.5 : 1.8} />
+            <span className={cn("font-semibold truncate", compact ? "text-[10px]" : "text-[9px]")}>
+              {label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function BatteryIcon() {
   return (
     <svg width="22" height="12" viewBox="0 0 22 12" fill="none" className="text-current">
@@ -24,35 +54,32 @@ function BatteryIcon() {
   );
 }
 
+// ── Phone simulator (desktop "Mobile" preview) ────────────────────────────────
 export function MobileFrame({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const router   = useRouter();
-
   const now  = new Date();
   const time = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="flex justify-center items-start min-h-full py-6 px-4 bg-slate-200 dark:bg-slate-950">
       {/* Phone body */}
-      <div
-        className="relative flex-shrink-0"
-        style={{ width: 393 }}
-      >
+      <div className="relative flex-shrink-0" style={{ width: 393 }}>
         {/* Outer chrome */}
         <div className="bg-slate-800 dark:bg-slate-950 rounded-[52px] p-[3px] shadow-[0_40px_80px_-12px_rgba(0,0,0,0.5)]">
           {/* Inner bezel */}
           <div className="bg-slate-900 rounded-[50px] p-[10px]">
             {/* Screen */}
-            <div className="bg-white dark:bg-slate-900 rounded-[42px] overflow-hidden relative flex flex-col" style={{ height: 812 }}>
-
-              {/* Dynamic island / notch */}
+            <div
+              className="bg-white dark:bg-slate-900 rounded-[42px] overflow-hidden relative flex flex-col"
+              style={{ height: 812 }}
+            >
+              {/* Dynamic island */}
               <div className="absolute top-2 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-full z-10 flex items-center justify-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-slate-700" />
                 <div className="w-3 h-3 rounded-full bg-slate-700 border border-slate-600" />
               </div>
 
               {/* Status bar */}
-              <div className="flex items-center justify-between px-8 pt-4 pb-1.5 shrink-0">
+              <div className="flex items-center justify-between px-8 pt-4 pb-1 shrink-0">
                 <span className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
                   {time}
                 </span>
@@ -63,39 +90,20 @@ export function MobileFrame({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              {/* App content — scrollable, @container so page grids respond to this width */}
-              <div className="flex-1 overflow-y-auto scrollbar-hide px-4 pt-2 pb-1 @container">
+              {/* ── TOP navigation bar ── */}
+              <div className="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 pt-1 pb-2">
+                <NavTabs compact={false} />
+              </div>
+
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto scrollbar-hide px-4 pt-3 pb-4 @container">
                 {children}
               </div>
 
-              {/* Bottom tab bar */}
-              <div className="shrink-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-2 pt-2 pb-1">
-                <div className="flex items-center justify-around">
-                  {NAV.map(({ href, icon: Icon, label }) => {
-                    const active = pathname === href || pathname.startsWith(href + "/");
-                    return (
-                      <button
-                        key={href}
-                        onClick={() => router.push(href)}
-                        className={cn(
-                          "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors min-w-0",
-                          active
-                            ? "text-sky-500"
-                            : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400"
-                        )}
-                      >
-                        <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
-                        <span className="text-[9px] font-semibold truncate">{label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {/* Home indicator */}
-                <div className="flex justify-center mt-2 mb-1">
-                  <div className="w-28 h-1 bg-slate-900 dark:bg-slate-100 rounded-full opacity-20" />
-                </div>
+              {/* Home indicator */}
+              <div className="shrink-0 flex justify-center py-2 bg-white dark:bg-slate-900">
+                <div className="w-28 h-1 bg-slate-900 dark:bg-slate-100 rounded-full opacity-20" />
               </div>
-
             </div>
           </div>
         </div>
@@ -106,6 +114,24 @@ export function MobileFrame({ children }: { children: React.ReactNode }) {
         <div className="absolute left-[-4px] top-[180px] w-1 h-12 bg-slate-700 dark:bg-slate-800 rounded-l-sm" />
         <div className="absolute right-[-4px] top-[148px] w-1 h-20 bg-slate-700 dark:bg-slate-800 rounded-r-sm" />
       </div>
+    </div>
+  );
+}
+
+// ── Real mobile layout (actual phones / small screens) ────────────────────────
+// No phone chrome — fills the real viewport. Nav is pinned at the top.
+export function RealMobileLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900">
+      {/* Sticky top navigation */}
+      <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-b border-slate-100 dark:border-slate-800 safe-top">
+        <NavTabs compact={true} />
+      </div>
+
+      {/* Scrollable page content */}
+      <main className="flex-1 px-4 py-5 @container">
+        {children}
+      </main>
     </div>
   );
 }
