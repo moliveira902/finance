@@ -61,20 +61,61 @@ export const useFinanceStore = create<FinanceStore>()(
       members: [],
 
       addTransaction: (t) =>
-        set((s) => ({ transactions: [{ ...t, id: uid() }, ...s.transactions] })),
+        set((s) => {
+          const newTx = { ...t, id: uid() };
+          return {
+            transactions: [newTx, ...s.transactions],
+            accounts: s.accounts.map((a) =>
+              a.id === newTx.account.id ? { ...a, balance: a.balance + newTx.amount } : a
+            ),
+          };
+        }),
 
       updateTransaction: (id, patch) =>
-        set((s) => ({
-          transactions: s.transactions.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-        })),
+        set((s) => {
+          const old = s.transactions.find((t) => t.id === id);
+          if (!old) return {};
+          const updated = { ...old, ...patch };
+          return {
+            transactions: s.transactions.map((t) => (t.id === id ? updated : t)),
+            accounts: s.accounts.map((a) => {
+              let balance = a.balance;
+              // Reverse old effect
+              if (a.id === old.account.id)     balance -= old.amount;
+              // Apply new effect
+              if (a.id === updated.account.id) balance += updated.amount;
+              return balance !== a.balance ? { ...a, balance } : a;
+            }),
+          };
+        }),
 
       deleteTransaction: (id) =>
-        set((s) => ({ transactions: s.transactions.filter((t) => t.id !== id) })),
+        set((s) => {
+          const tx = s.transactions.find((t) => t.id === id);
+          return {
+            transactions: s.transactions.filter((t) => t.id !== id),
+            accounts: tx
+              ? s.accounts.map((a) =>
+                  a.id === tx.account.id ? { ...a, balance: a.balance - tx.amount } : a
+                )
+              : s.accounts,
+          };
+        }),
 
       importTransactions: (rows) =>
-        set((s) => ({
-          transactions: [...rows.map((r) => ({ ...r, id: uid() })), ...s.transactions],
-        })),
+        set((s) => {
+          const newTxs = rows.map((r) => ({ ...r, id: uid() }));
+          const updatedAccounts = s.accounts.map((a) => {
+            const delta = newTxs
+              .filter((t) => t.account.id === a.id)
+              .reduce((sum, t) => sum + t.amount, 0);
+            return delta !== 0 ? { ...a, balance: a.balance + delta } : a;
+          });
+          return {
+            transactions: [...newTxs, ...s.transactions],
+            accounts: updatedAccounts,
+          };
+        }),
 
       addAccount: (a) =>
         set((s) => ({ accounts: [...s.accounts, { ...a, id: uid() }] })),
