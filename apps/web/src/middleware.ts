@@ -6,14 +6,10 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "dev-secret-key-change-in-production-32+"
 );
 
-// Paths that bypass JWT auth entirely.
-// The middleware still runs (matcher below is intentionally broad) but
-// these routes return next() immediately — no token check, no redirect.
-const PUBLIC_PREFIXES = [
-  "/api/ingest/",   // n8n ingest — protected by x-api-key header
-  "/api/auth/",     // login / logout
-  "/test-ingest",   // public API test page
-];
+// Routes that must never be intercepted.
+// Primary exclusion is in the matcher below; this is a defence-in-depth
+// fallback for edge runtimes that silently ignore negative lookaheads.
+const PUBLIC_PREFIXES = ["/api/ingest/", "/api/auth/", "/test-ingest"];
 
 async function isValidSession(token: string): Promise<boolean> {
   try {
@@ -27,7 +23,7 @@ async function isValidSession(token: string): Promise<boolean> {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Pass public routes straight through — no auth required
+  // Fallback: pass public routes through even if matcher didn't exclude them
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
@@ -35,14 +31,14 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("financeapp_session")?.value;
   const authenticated = token ? await isValidSession(token) : false;
 
-  // Redirect authenticated users away from the login page
+  // Redirect authenticated users away from login
   if (pathname === "/login") {
     return authenticated
       ? NextResponse.redirect(new URL("/dashboard", request.url))
       : NextResponse.next();
   }
 
-  // Every other route requires a valid session
+  // All other routes require a valid session
   if (!authenticated) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
@@ -50,8 +46,16 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Intentionally broad — excludes only Next.js internals and static assets.
-// All path-based public/private logic lives in the function above.
+// Primary exclusion via matcher.
+// After consuming the leading "/", the lookahead checks the remainder of the path.
+// Excluded (public, zero middleware overhead):
+//   api/ingest/  — ingest API, protected by x-api-key only
+//   api/auth/    — login / logout
+//   test-ingest  — public test page
+//   _next/*      — Next.js internals
+//   favicon.ico  — static asset
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon\\.ico).*)"],
+  matcher: [
+    "/((?!api/ingest/|api/auth/|test-ingest|_next/static|_next/image|favicon\\.ico).*)",
+  ],
 };

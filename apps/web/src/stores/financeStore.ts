@@ -6,7 +6,6 @@ import {
   type Transaction,
   type Account,
   type Category,
-  type Budget,
   type Member,
   type UserProfile,
 } from "@/lib/mock-data";
@@ -22,7 +21,6 @@ interface FinanceStore {
   transactions: Transaction[];
   accounts: Account[];
   categories: Category[];
-  budgets: Budget[];
 
   // Profile & members
   profile: UserProfile;
@@ -44,11 +42,6 @@ interface FinanceStore {
   updateCategory: (id: string, patch: Partial<Omit<Category, "id">>) => void;
   deleteCategory: (id: string) => void;
 
-  // Budgets
-  addBudget: (b: Omit<Budget, "id">) => void;
-  updateBudget: (id: string, patch: Partial<Omit<Budget, "id">>) => void;
-  deleteBudget: (id: string) => void;
-
   // Profile
   updateProfile: (patch: Partial<UserProfile>) => void;
 
@@ -64,7 +57,6 @@ export const useFinanceStore = create<FinanceStore>()(
       transactions: [],
       accounts: [],
       categories: defaultCategories,
-      budgets: [],
       profile: { name: "", email: "" },
       members: [],
 
@@ -105,17 +97,6 @@ export const useFinanceStore = create<FinanceStore>()(
 
       deleteCategory: (id) =>
         set((s) => ({ categories: s.categories.filter((c) => c.id !== id) })),
-
-      addBudget: (b) =>
-        set((s) => ({ budgets: [...s.budgets, { ...b, id: uid() }] })),
-
-      updateBudget: (id, patch) =>
-        set((s) => ({
-          budgets: s.budgets.map((b) => (b.id === id ? { ...b, ...patch } : b)),
-        })),
-
-      deleteBudget: (id) =>
-        set((s) => ({ budgets: s.budgets.filter((b) => b.id !== id) })),
 
       updateProfile: (patch) =>
         set((s) => ({ profile: { ...s.profile, ...patch } })),

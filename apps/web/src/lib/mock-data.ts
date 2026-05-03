@@ -21,16 +21,10 @@ export type Transaction = {
   category: Category;
   account: Account;
   date: string;
+  isRecurring?: boolean;
+  recurringPeriod?: "monthly" | "yearly";
   aiCategory?: string;
   aiConfidence?: number;
-};
-
-export type Budget = {
-  id: string;
-  category: Category;
-  amount: number;
-  spent: number;
-  period: "monthly";
 };
 
 export const categories: Category[] = [
@@ -62,8 +56,6 @@ export type UserProfile = {
 export const accounts: Account[] = [];
 
 export const transactions: Transaction[] = [];
-
-export const budgets: Budget[] = [];
 
 
 export function formatBRL(value: number): string {

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Search, Plus, Upload, Sparkles, ChevronDown, Trash2 } from "lucide-react";
+import { Search, Plus, Upload, Sparkles, ChevronDown, Trash2, RepeatIcon } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -11,7 +11,7 @@ import { useFinanceStore } from "@/stores/financeStore";
 import { formatBRL, formatDate } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
-type TypeFilter = "all" | "income" | "expense";
+type TypeFilter = "all" | "income" | "expense" | "recurring";
 
 function currentMonthLabel() {
   return new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
@@ -28,7 +28,7 @@ export default function TransactionsPage() {
 
   const filtered = transactions.filter((tx) => {
     const matchSearch = tx.description.toLowerCase().includes(search.toLowerCase());
-    const matchType   = typeFilter === "all" || tx.type === typeFilter;
+    const matchType   = typeFilter === "all" || (typeFilter === "recurring" ? tx.isRecurring : tx.type === typeFilter);
     const matchCat    = catFilter  === "all" || tx.category.id === catFilter;
     return matchSearch && matchType && matchCat;
   });
@@ -82,7 +82,7 @@ export default function TransactionsPage() {
         </div>
 
         <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-0.5">
-          {(["all", "income", "expense"] as TypeFilter[]).map((t) => (
+          {(["all", "income", "expense", "recurring"] as TypeFilter[]).map((t) => (
             <button key={t} onClick={() => setTypeFilter(t)}
               className={cn(
                 "h-7 px-3 rounded-lg text-xs font-medium transition-all",
@@ -90,7 +90,7 @@ export default function TransactionsPage() {
                   ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
                   : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               )}>
-              {t === "all" ? "Todas" : t === "income" ? "Receitas" : "Despesas"}
+              {t === "all" ? "Todas" : t === "income" ? "Receitas" : t === "expense" ? "Despesas" : "Recorrentes"}
             </button>
           ))}
         </div>
@@ -146,11 +146,18 @@ export default function TransactionsPage() {
                     <span className="text-sm text-slate-500 dark:text-slate-400">{formatDate(tx.date)}</span>
                   </td>
                   <td className="hidden @3xl:table-cell px-4 py-3">
-                    {tx.aiCategory && (
-                      <Badge variant="info" className="text-[10px] gap-0.5 py-0 px-1.5">
-                        <Sparkles size={9} /> {Math.round((tx.aiConfidence ?? 0) * 100)}%
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {tx.isRecurring && (
+                        <Badge variant="info" className="text-[10px] gap-0.5 py-0 px-1.5">
+                          <RepeatIcon size={9} /> {tx.recurringPeriod === "yearly" ? "Anual" : "Mensal"}
+                        </Badge>
+                      )}
+                      {tx.aiCategory && (
+                        <Badge variant="info" className="text-[10px] gap-0.5 py-0 px-1.5">
+                          <Sparkles size={9} /> {Math.round((tx.aiConfidence ?? 0) * 100)}%
+                        </Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-5 py-3 text-right">
                     <span className={cn("text-sm font-semibold tabular-nums",

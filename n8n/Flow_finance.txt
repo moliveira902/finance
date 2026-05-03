@@ -1,0 +1,193 @@
+{
+  "name": "Finance Telegram AI Flow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      },
+      "id": "Telegram Trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a financial data parser."
+          },
+          {
+            "role": "user",
+            "content": "Convert the user message into a JSON with this exact structure:\n\n{\n  \"description\": \"\",\n  \"amount\": 0,\n  \"type\": \"expense\",\n  \"date\": \"YYYY-MM-DD\",\n  \"category\": \"\",\n  \"account\": \"Conta Corrente\"\n}\n\nRules:\n- Always return ONLY valid JSON\n- \"type\" is always \"expense\"\n- Convert relative dates (like ontem, hoje) to ISO format\n- Amount must be a number (no currency symbols)\n- Infer category when possible (ex: almoço → Alimentação)\n- Description should be short and clear\n\nUser message:\n{{$json[\"message\"][\"text\"]}}"
+          }
+        ],
+        "temperature": 0.2
+      },
+      "id": "AI Parser",
+      "name": "AI Parser",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "let content = $json.choices[0].message.content;\n\ntry {\n  return [\n    {\n      json: JSON.parse(content)\n    }\n  ];\n} catch (e) {\n  throw new Error(\"Invalid JSON from AI: \" + content);\n}"
+      },
+      "id": "Parse JSON",
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://finance-hkd9tvn1m-moliveira902-5664s-projects.vercel.app/api/ingest/transactions",
+        "jsonParameters": true,
+        "options": {
+          "continueOnFail": true
+        },
+        "headerParametersJson": "{\n  \"Content-Type\": \"application/json\",\n  \"x-api-key\": \"XXXXXXXX\"\n}",
+        "bodyParametersJson": "={{$json}}"
+      },
+      "id": "HTTP Request",
+      "name": "Send to API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        950,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"statusCode\"]}}",
+              "operation": "largerEqual",
+              "value2": 400
+            }
+          ]
+        }
+      },
+      "id": "IF Error",
+      "name": "Check Error",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1150,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "your@email.com",
+        "toEmail": "marciooliver@yahoo.com",
+        "subject": "Erro no envio de transação financeira",
+        "text": "Erro ao enviar transação.\n\nResposta da API:\n{{$json}}"
+      },
+      "id": "Send Email",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1350,
+        200
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Parser": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Send to API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to API": {
+      "main": [
+        [
+          {
+            "node": "Check Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Error": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1"
+}

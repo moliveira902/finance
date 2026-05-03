@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from "recharts";
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Sparkles, ArrowUpRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Sparkles, ArrowUpRight, RepeatIcon, Clock } from "lucide-react";
 import Link from "next/link";
 import { Card, CardLabel, CardValue } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -67,6 +67,34 @@ function buildMonthlyTrend(txs: Transaction[]) {
   });
 }
 
+function buildUpcomingRecurring(all: Transaction[]) {
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth();
+
+  const seen  = new Set<string>();
+  return all
+    .filter((t) => t.isRecurring)
+    .filter((t) => {
+      const key = t.description.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      // due = no other occurrence found in current period
+      if (t.recurringPeriod === "yearly") {
+        return !all.some((o) => {
+          if (o.id === t.id) return false;
+          const d = new Date(o.date);
+          return d.getFullYear() === year && o.description.toLowerCase() === key;
+        });
+      }
+      return !all.some((o) => {
+        if (o.id === t.id) return false;
+        const d = new Date(o.date);
+        return d.getFullYear() === year && d.getMonth() === month && o.description.toLowerCase() === key;
+      });
+    });
+}
+
 function buildCategoryBreakdown(txs: Transaction[]) {
   const map = new Map<string, { name: string; value: number; color: string }>();
   txs.filter((t) => t.type === "expense").forEach((t) => {
@@ -92,9 +120,10 @@ export default function DashboardPage() {
   const netWorth     = totalAssets - totalDebt;
   const income       = monthTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
   const expenses     = Math.abs(monthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0));
-  const recent       = [...transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-  const monthlyTrend = buildMonthlyTrend(transactions);
-  const catBreakdown = buildCategoryBreakdown(monthTxs);
+  const recent            = [...transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const monthlyTrend      = buildMonthlyTrend(transactions);
+  const catBreakdown      = buildCategoryBreakdown(monthTxs);
+  const upcomingRecurring = buildUpcomingRecurring(transactions);
 
   return (
     <div className="space-y-6">
@@ -166,6 +195,47 @@ export default function DashboardPage() {
           )}
         </Card>
       </div>
+
+      {/* Upcoming recurring */}
+      {upcomingRecurring.length > 0 && (
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Clock size={14} className="text-amber-500" />
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Recorrentes em aberto este mês
+              </span>
+              <span className="text-xs font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
+                {upcomingRecurring.length}
+              </span>
+            </div>
+            <Link href="/recorrentes"
+              className="flex items-center gap-1 text-xs text-sky-500 hover:text-sky-600 font-medium transition-colors">
+              Ver todas <ArrowUpRight size={12} />
+            </Link>
+          </div>
+          <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+            {upcomingRecurring.slice(0, 4).map((tx) => (
+              <div key={tx.id} className="flex items-center justify-between py-2.5">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg leading-none">{tx.category.icon}</span>
+                  <div>
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{tx.description}</p>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                      <RepeatIcon size={9} />
+                      {tx.recurringPeriod === "yearly" ? "Anual" : "Mensal"}
+                    </span>
+                  </div>
+                </div>
+                <span className={cn("text-sm font-semibold tabular-nums",
+                  tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>
+                  {tx.type === "income" ? "+" : "−"}{formatBRL(Math.abs(tx.amount))}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Accounts + Recent */}
       <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-4">

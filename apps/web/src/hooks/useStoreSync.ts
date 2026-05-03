@@ -18,13 +18,10 @@ export function useStoreSync() {
         if (!alive) return;
         if (json?.data) {
           const { categories } = useFinanceStore.getState();
-          // setState is synchronous — subscribe fires before loaded.current = true
-          // so the initial hydration does NOT trigger a server write
           useFinanceStore.setState({
             transactions: json.data.transactions ?? [],
             accounts:     json.data.accounts     ?? [],
             categories:   json.data.categories   ?? categories,
-            budgets:      json.data.budgets       ?? [],
             profile:      json.data.profile       ?? { name: "", email: "" },
             members:      json.data.members       ?? [],
           });
@@ -47,11 +44,11 @@ export function useStoreSync() {
 
       clearTimeout(timer.current);
       timer.current = setTimeout(() => {
-        const { transactions, accounts, categories, budgets, profile, members } = state;
+        const { transactions, accounts, categories, profile, members } = state;
         fetch("/api/store", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transactions, accounts, categories, budgets, profile, members }),
+          body: JSON.stringify({ transactions, accounts, categories, profile, members }),
         }).catch(() => {});
       }, DEBOUNCE_MS);
     });

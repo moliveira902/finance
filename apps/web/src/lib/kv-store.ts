@@ -19,12 +19,12 @@ export type Account  = { id: string; name: string; type: string; balance: number
 export type Transaction = {
   id: string; description: string; amount: number;
   type: "income" | "expense"; category: Category; account: Account; date: string;
+  isRecurring?: boolean; recurringPeriod?: "monthly" | "yearly";
 };
 export interface StoreData {
   transactions: Transaction[];
   accounts:     Account[];
   categories:   Category[];
-  budgets:      unknown[];
   profile:      { name: string; email: string };
   members:      unknown[];
 }
@@ -46,7 +46,6 @@ const EMPTY_STORE: StoreData = {
   transactions: [],
   accounts:     [],
   categories:   DEFAULT_CATEGORIES,
-  budgets:      [],
   profile:      { name: "", email: "" },
   members:      [],
 };
@@ -104,7 +103,6 @@ export async function getStore(userId: string): Promise<StoreData> {
     transactions: raw.transactions ?? [],
     accounts:     raw.accounts     ?? [],
     categories:   raw.categories?.length ? raw.categories : DEFAULT_CATEGORIES,
-    budgets:      raw.budgets      ?? [],
     profile:      raw.profile      ?? { name: "", email: "" },
     members:      raw.members      ?? [],
   };

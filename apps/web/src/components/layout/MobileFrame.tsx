@@ -1,7 +1,7 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, ArrowLeftRight, PiggyBank, BarChart2, Settings,
+  LayoutDashboard, ArrowLeftRight, RepeatIcon, BarChart2, Settings,
   Wifi, Signal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/dashboard",    icon: LayoutDashboard, label: "Início"     },
   { href: "/transactions", icon: ArrowLeftRight,  label: "Transações" },
-  { href: "/budgets",      icon: PiggyBank,       label: "Orçamentos" },
+  { href: "/recorrentes",  icon: RepeatIcon,      label: "Recorrentes"},
   { href: "/reports",      icon: BarChart2,       label: "Relatórios" },
   { href: "/settings",     icon: Settings,        label: "Config."    },
 ];

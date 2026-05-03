@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
-  LayoutDashboard, ArrowLeftRight, PiggyBank,
+  LayoutDashboard, ArrowLeftRight, RepeatIcon,
   BarChart2, Settings, LogOut, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,7 @@ function shortName(name: string): string {
 const NAV = [
   { label: "Dashboard",    href: "/dashboard",    icon: LayoutDashboard },
   { label: "Transações",   href: "/transactions", icon: ArrowLeftRight  },
-  { label: "Orçamentos",   href: "/budgets",      icon: PiggyBank       },
+  { label: "Recorrentes",  href: "/recorrentes",  icon: RepeatIcon      },
   { label: "Relatórios",   href: "/reports",      icon: BarChart2       },
   { label: "Configurações",href: "/settings",     icon: Settings        },
 ];
