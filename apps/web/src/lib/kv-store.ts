@@ -1,12 +1,12 @@
 /**
  * Shared key-value store used by all API routes.
  *
- * Uses Vercel KV (Redis) when the KV_REST_API_URL env var is present —
- * this is added automatically when you link a KV database in the Vercel dashboard.
+ * Uses Upstash Redis when UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN
+ * are present (set these in Vercel → Settings → Environment Variables after
+ * creating a free database at console.upstash.com).
  *
- * Falls back to /tmp files when KV is not configured (local dev, or before
- * KV is set up). /tmp is per-instance and ephemeral — data loss is possible
- * in that mode.
+ * Falls back to /tmp files when not configured (local dev). /tmp is
+ * per-instance and ephemeral — data loss is expected in that mode.
  */
 
 import { existsSync, readFileSync, writeFileSync } from "fs";
@@ -50,20 +50,33 @@ const EMPTY_STORE: StoreData = {
   members:      [],
 };
 
-// ── KV backend ────────────────────────────────────────────────────────────────
+// ── Upstash Redis backend ─────────────────────────────────────────────────────
 
 export function isKvConfigured(): boolean {
-  return !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN;
+  return !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
+}
+
+async function getRedis() {
+  const { Redis } = await import("@upstash/redis");
+  return new Redis({
+    url:   process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
 }
 
 export async function kvGet<T = unknown>(key: string): Promise<T | null> {
-  const { kv } = await import("@vercel/kv");
-  return kv.get<T>(key);
+  const redis = await getRedis();
+  return redis.get<T>(key);
 }
 
 export async function kvSet<T = unknown>(key: string, data: T): Promise<void> {
-  const { kv } = await import("@vercel/kv");
-  await kv.set(key, data);
+  const redis = await getRedis();
+  await redis.set(key, data);
+}
+
+export async function kvDel(key: string): Promise<void> {
+  const redis = await getRedis();
+  await redis.del(key);
 }
 
 // ── /tmp fallback ─────────────────────────────────────────────────────────────

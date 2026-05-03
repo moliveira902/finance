@@ -1,4 +1,4 @@
-import { isKvConfigured, kvGet, kvSet } from "@/lib/kv-store";
+import { isKvConfigured, kvGet, kvSet, kvDel } from "@/lib/kv-store";
 
 export interface AppUser {
   id: string;
@@ -108,8 +108,7 @@ export async function getPending(token: string): Promise<PendingRegistration | n
 
 export async function deletePending(token: string): Promise<void> {
   if (!isKvConfigured()) return;
-  const { kv } = await import("@vercel/kv");
-  await kv.del(pendingKey(token));
+  await kvDel(pendingKey(token));
 }
 
 export function storeFilePath(userId: string): string {
