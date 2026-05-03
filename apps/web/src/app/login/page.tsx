@@ -120,7 +120,7 @@ function LoginPageInner() {
               <span className="text-sky-400">com inteligência</span>
             </h1>
             <p className="text-slate-400 mt-4 text-base leading-relaxed">
-              Plataforma completa para controle financeiro pessoal — orçamentos, relatórios e IA para categorização automática.
+              Plataforma completa para controle financeiro pessoal — transações recorrentes, relatórios e IA para categorização automática.
             </p>
           </div>
           <div className="space-y-5">

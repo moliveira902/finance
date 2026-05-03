@@ -438,8 +438,8 @@ export default function SettingsPage() {
             <Card>
               <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Preferências de Notificação</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Escolha como e quando deseja ser notificado.</p>
-              <SettingRow label="Alertas de orçamento por email"
-                description="Receba emails ao atingir 80% e 100% de cada orçamento."
+              <SettingRow label="Alertas de gastos por email"
+                description="Receba emails quando suas despesas mensais ultrapassarem sua receita."
                 enabled={emailAlerts}   onChange={setEmailAlerts} />
               <SettingRow label="Push notifications"
                 description="Alertas instantâneos no dispositivo para eventos importantes."

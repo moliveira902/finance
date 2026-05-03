@@ -22,7 +22,6 @@ export function useCreateTransaction() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      qc.invalidateQueries({ queryKey: ["budgets"] });
     },
   });
 }
@@ -46,7 +45,6 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      qc.invalidateQueries({ queryKey: ["budgets"] });
     },
   });
 }

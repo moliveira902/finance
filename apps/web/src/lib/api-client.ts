@@ -1,7 +1,6 @@
 import type {
   Account,
   Transaction,
-  Budget,
   Category,
   DashboardResponse,
   MonthlyTrendPoint,
@@ -12,8 +11,6 @@ import type {
   UpdateTransactionDto,
   CreateAccountDto,
   UpdateAccountDto,
-  CreateBudgetDto,
-  UpdateBudgetDto,
   ApiError,
 } from "@financeapp/shared-types";
 
@@ -108,21 +105,6 @@ export const transactionsApi = {
 
   remove: (id: string) =>
     apiFetch<void>(`/transactions/${id}`, { method: "DELETE" }),
-};
-
-// ── Budgets ───────────────────────────────────────────────────────────────────
-
-export const budgetsApi = {
-  list: () => apiFetch<(Budget & { spentCents: number; utilization: number })[]>("/budgets"),
-
-  create: (dto: CreateBudgetDto) =>
-    apiFetch<Budget>("/budgets", { method: "POST", body: JSON.stringify(dto) }),
-
-  update: (id: string, dto: UpdateBudgetDto) =>
-    apiFetch<Budget>(`/budgets/${id}`, { method: "PATCH", body: JSON.stringify(dto) }),
-
-  remove: (id: string) =>
-    apiFetch<void>(`/budgets/${id}`, { method: "DELETE" }),
 };
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
