@@ -52,16 +52,16 @@ const EMPTY_STORE: StoreData = {
 
 // ── KV backend ────────────────────────────────────────────────────────────────
 
-function isKvConfigured(): boolean {
+export function isKvConfigured(): boolean {
   return !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN;
 }
 
-async function kvGet(key: string): Promise<StoreData | null> {
+export async function kvGet<T = unknown>(key: string): Promise<T | null> {
   const { kv } = await import("@vercel/kv");
-  return kv.get<StoreData>(key);
+  return kv.get<T>(key);
 }
 
-async function kvSet(key: string, data: StoreData): Promise<void> {
+export async function kvSet<T = unknown>(key: string, data: T): Promise<void> {
   const { kv } = await import("@vercel/kv");
   await kv.set(key, data);
 }
@@ -92,7 +92,7 @@ export async function getStore(userId: string): Promise<StoreData> {
   let raw: StoreData | null = null;
 
   if (isKvConfigured()) {
-    raw = await kvGet(storeKey(userId));
+    raw = await kvGet<StoreData>(storeKey(userId));
   } else {
     raw = tmpGet(userId);
   }

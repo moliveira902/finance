@@ -3,10 +3,11 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
   LayoutDashboard, ArrowLeftRight, RepeatIcon,
-  BarChart2, Settings, LogOut, Wallet,
+  BarChart2, Settings, LogOut, Wallet, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFinanceStore } from "@/stores/financeStore";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 function nameInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -31,10 +32,11 @@ const NAV = [
 ];
 
 export function Sidebar() {
-  const pathname = usePathname();
-  const router   = useRouter();
+  const pathname    = usePathname();
+  const router      = useRouter();
   const { profile } = useFinanceStore();
-  const initials = nameInitials(profile.name);
+  const currentUser = useCurrentUser();
+  const initials    = nameInitials(profile.name);
   const displayName = shortName(profile.name);
 
   async function handleLogout() {
@@ -79,6 +81,26 @@ export function Sidebar() {
             </Link>
           );
         })}
+        {currentUser?.isAdmin && (
+          <Link
+            href="/admin/users"
+            className={cn(
+              "flex items-center gap-3 h-9 px-3 rounded-lg text-sm font-medium transition-colors",
+              pathname.startsWith("/admin")
+                ? "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
+            )}
+          >
+            <ShieldCheck
+              size={15}
+              className={cn(
+                "shrink-0",
+                pathname.startsWith("/admin") ? "text-amber-500" : "text-slate-400 dark:text-slate-500"
+              )}
+            />
+            Admin
+          </Link>
+        )}
       </nav>
 
       {/* User */}
