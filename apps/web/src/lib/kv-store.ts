@@ -19,7 +19,7 @@ export type Account  = { id: string; name: string; type: string; balance: number
 export type Transaction = {
   id: string; description: string; amount: number;
   type: "income" | "expense"; category: Category; account: Account; date: string;
-  isRecurring?: boolean; recurringPeriod?: "monthly" | "yearly";
+  isRecurring?: boolean; recurringPeriod?: "monthly" | "yearly"; recurringCount?: number;
 };
 export interface StoreData {
   transactions: Transaction[];

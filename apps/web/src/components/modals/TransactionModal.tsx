@@ -4,6 +4,7 @@ import { RepeatIcon } from "lucide-react";
 import { Modal, FieldRow, Input, Select } from "./Modal";
 import { Button } from "@/components/ui/Button";
 import { useFinanceStore } from "@/stores/financeStore";
+import { formatBRL } from "@/lib/mock-data";
 import type { Transaction } from "@/lib/mock-data";
 
 interface Props {
@@ -24,13 +25,15 @@ export function TransactionModal({ open, onClose, initial }: Props) {
   const [date,            setDate]            = useState(initial?.date ?? today);
   const [isRecurring,     setIsRecurring]     = useState(initial?.isRecurring ?? false);
   const [recurringPeriod, setRecurringPeriod] = useState<"monthly" | "yearly">(initial?.recurringPeriod ?? "monthly");
+  const [recurringCount,  setRecurringCount]  = useState<string>(initial?.recurringCount ? String(initial.recurringCount) : "");
   const [error,           setError]           = useState("");
 
   function reset() {
     setDesc(""); setAmount(""); setType("expense");
     setCatId(categories[0]?.id ?? "");
     setAccId(accounts[0]?.id ?? "");
-    setDate(today); setIsRecurring(false); setRecurringPeriod("monthly"); setError("");
+    setDate(today); setIsRecurring(false); setRecurringPeriod("monthly");
+    setRecurringCount(""); setError("");
   }
 
   function handleClose() { reset(); onClose(); }
@@ -38,10 +41,15 @@ export function TransactionModal({ open, onClose, initial }: Props) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const num = parseFloat(amount.replace(",", "."));
-    if (!desc.trim())        return setError("Informe a descrição.");
+    if (!desc.trim())           return setError("Informe a descrição.");
     if (isNaN(num) || num <= 0) return setError("Informe um valor válido.");
-    if (!catId)              return setError("Selecione uma categoria.");
-    if (!accId)              return setError("Selecione uma conta.");
+    if (!catId)                 return setError("Selecione uma categoria.");
+    if (!accId)                 return setError("Selecione uma conta.");
+
+    const countNum = recurringCount ? parseInt(recurringCount, 10) : undefined;
+    if (isRecurring && recurringCount && (isNaN(countNum!) || countNum! < 1)) {
+      return setError("Número de períodos deve ser maior que zero.");
+    }
 
     const category = categories.find((c) => c.id === catId)!;
     const account  = accounts.find((a) => a.id === accId)!;
@@ -50,7 +58,8 @@ export function TransactionModal({ open, onClose, initial }: Props) {
     const fields = {
       description: desc.trim(), amount: signed, type, category, account, date,
       isRecurring,
-      recurringPeriod: isRecurring ? recurringPeriod : undefined,
+      recurringPeriod:  isRecurring ? recurringPeriod : undefined,
+      recurringCount:   isRecurring && countNum ? countNum : undefined,
     };
 
     if (initial) {
@@ -60,6 +69,13 @@ export function TransactionModal({ open, onClose, initial }: Props) {
     }
     handleClose();
   }
+
+  // Preview total commitment
+  const num = parseFloat(amount.replace(",", "."));
+  const countNum = recurringCount ? parseInt(recurringCount, 10) : undefined;
+  const showPreview = isRecurring && !isNaN(num) && num > 0 && countNum && countNum > 0;
+  const totalCommitment = showPreview ? num * countNum! : 0;
+  const periodLabel = recurringPeriod === "yearly" ? "ano" : "mês";
 
   return (
     <Modal open={open} onClose={handleClose} title={initial ? "Editar Transação" : "Nova Transação"}>
@@ -119,13 +135,35 @@ export function TransactionModal({ open, onClose, initial }: Props) {
           </button>
 
           {isRecurring && (
-            <div className="px-4 pb-3 bg-sky-50/50 dark:bg-sky-950/20 border-t border-slate-100 dark:border-slate-700">
-              <FieldRow label="Periodicidade">
-                <Select value={recurringPeriod} onChange={(e) => setRecurringPeriod(e.target.value as "monthly" | "yearly")}>
-                  <option value="monthly">Mensal</option>
-                  <option value="yearly">Anual</option>
-                </Select>
-              </FieldRow>
+            <div className="px-4 pb-4 pt-3 bg-sky-50/50 dark:bg-sky-950/20 border-t border-slate-100 dark:border-slate-700 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <FieldRow label="Periodicidade">
+                  <Select value={recurringPeriod} onChange={(e) => setRecurringPeriod(e.target.value as "monthly" | "yearly")}>
+                    <option value="monthly">Mensal</option>
+                    <option value="yearly">Anual</option>
+                  </Select>
+                </FieldRow>
+                <FieldRow label={`Nº de ${recurringPeriod === "yearly" ? "anos" : "meses"}`}>
+                  <Input
+                    type="number" min="1" step="1"
+                    value={recurringCount}
+                    onChange={(e) => setRecurringCount(e.target.value)}
+                    placeholder="Ex: 12"
+                  />
+                </FieldRow>
+              </div>
+
+              {/* Commitment preview */}
+              {showPreview && (
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-sky-100/60 dark:bg-sky-900/30 text-xs">
+                  <span className="text-slate-500 dark:text-slate-400">
+                    {countNum} {periodLabel}{countNum! > 1 ? "s" : ""} × {formatBRL(num)}
+                  </span>
+                  <span className="font-bold text-sky-700 dark:text-sky-300">
+                    Total: {formatBRL(totalCommitment)}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>

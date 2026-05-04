@@ -135,7 +135,7 @@ export default function RecorrentesPage() {
                 </div>
 
                 {/* Amount breakdown */}
-                <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-50 dark:border-slate-700/50">
+                <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-slate-50 dark:border-slate-700/50">
                   <div>
                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Por período</p>
                     <span className={cn(
@@ -147,20 +147,26 @@ export default function RecorrentesPage() {
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">
-                      {tx.recurringPeriod === "yearly" ? "Equiv. mensal" : "Impacto anual"}
+                      {tx.recurringPeriod === "yearly" ? "Equiv./mês" : "Impacto anual"}
                     </p>
                     <span className={cn(
                       "text-sm font-semibold tabular-nums flex items-center gap-1",
                       tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                     )}>
-                      {tx.type === "income"
-                        ? <TrendingUp size={12} />
-                        : <TrendingDown size={12} />}
-                      {tx.recurringPeriod === "yearly"
-                        ? formatBRL(monthly)
-                        : formatBRL(annual)}
+                      {tx.type === "income" ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                      {tx.recurringPeriod === "yearly" ? formatBRL(monthly) : formatBRL(annual)}
                     </span>
                   </div>
+                  {tx.recurringCount && tx.recurringCount > 0 && (
+                    <div>
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">
+                        Total ({tx.recurringCount} {tx.recurringPeriod === "yearly" ? "anos" : "meses"})
+                      </p>
+                      <span className="text-sm font-bold tabular-nums text-sky-600 dark:text-sky-400">
+                        {formatBRL(Math.abs(tx.amount) * tx.recurringCount)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </Card>
             );

@@ -23,6 +23,7 @@ export type Transaction = {
   date: string;
   isRecurring?: boolean;
   recurringPeriod?: "monthly" | "yearly";
+  recurringCount?: number;
   aiCategory?: string;
   aiConfidence?: number;
 };
