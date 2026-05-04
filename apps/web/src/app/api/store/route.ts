@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-import { getStore, setStore } from "@/lib/kv-store";
+import { getStore, setStore, kvDel, isKvConfigured } from "@/lib/kv-store";
 import type { StoreData } from "@/lib/kv-store";
 
 const SECRET = new TextEncoder().encode(
@@ -48,5 +48,8 @@ export async function PUT(request: Request) {
   const body = await request.json().catch(() => null) as StoreData | null;
   if (!body) return NextResponse.json({ error: "BAD_REQUEST" }, { status: 400 });
   await setStore(user.id, body);
+  if (isKvConfigured()) {
+    await kvDel(`coach:context:${user.id}`);
+  }
   return NextResponse.json({ ok: true });
 }

@@ -9,7 +9,7 @@ const JWT_SECRET = new TextEncoder().encode(
 // Routes that must never be intercepted.
 // Primary exclusion is in the matcher below; this is a defence-in-depth
 // fallback for edge runtimes that silently ignore negative lookaheads.
-const PUBLIC_PREFIXES = ["/api/ingest/", "/api/auth/", "/test-ingest"];
+const PUBLIC_PREFIXES = ["/api/ingest/", "/api/auth/", "/api/coach/webhook", "/test-ingest"];
 
 async function isValidSession(token: string): Promise<boolean> {
   try {
@@ -56,6 +56,6 @@ export async function middleware(request: NextRequest) {
 //   favicon.ico  — static asset
 export const config = {
   matcher: [
-    "/((?!api/ingest/|api/auth/|test-ingest|_next/static|_next/image|favicon\\.ico).*)",
+    "/((?!api/ingest/|api/auth/|api/coach/webhook|test-ingest|_next/static|_next/image|favicon\\.ico).*)",
   ],
 };

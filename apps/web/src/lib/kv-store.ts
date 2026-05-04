@@ -69,9 +69,13 @@ export async function kvGet<T = unknown>(key: string): Promise<T | null> {
   return redis.get<T>(key);
 }
 
-export async function kvSet<T = unknown>(key: string, data: T): Promise<void> {
+export async function kvSet<T = unknown>(key: string, data: T, ex?: number): Promise<void> {
   const redis = await getRedis();
-  await redis.set(key, data);
+  if (ex) {
+    await redis.set(key, data, { ex });
+  } else {
+    await redis.set(key, data);
+  }
 }
 
 export async function kvDel(key: string): Promise<void> {

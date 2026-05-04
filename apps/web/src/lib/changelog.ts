@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "1.5.0";
+export const CURRENT_VERSION = "1.6.0";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.6.0",
+    date: "2026-05-04",
+    title: "Meu Consultor — IA Financeira",
+    items: [
+      "Consultor financeiro IA (GPT-4.1) com análise personalizada dos seus dados reais",
+      "Chat com streaming em tempo real — respostas chegam palavra por palavra",
+      "Chips de sugestão rápida para perguntas frequentes",
+      "Canal Telegram via n8n: mesmo consultor acessível pelo bot",
+      "Cache inteligente do contexto financeiro (5 min, invalidado ao salvar dados)",
+    ],
+  },
   {
     version: "1.5.0",
     date: "2026-05-04",

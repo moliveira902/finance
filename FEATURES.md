@@ -1,5 +1,21 @@
 # FinanceApp — Release Notes
 
+## v1.6.0 — 2026-05-04
+
+### AI Financial Coach — "Meu Consultor"
+- New **Meu Consultor** page accessible from the sidebar (Bot icon)
+- Conversational AI coach powered by **GPT-4.1** that analyses the user's real financial data (transactions, accounts, recurring items, 6-month history)
+- Responses streamed in real time using Server-Sent Events (SSE) — text appears word by word
+- Four quick-suggestion chips for the most common questions
+- Full conversation history maintained within the session (last 10 turns sent to the model)
+- Context cached in Upstash Redis for 5 minutes; cache invalidated automatically whenever the store is updated
+- **Telegram channel via n8n**: `POST /api/coach/webhook` (x-api-key auth, synchronous JSON reply) — same coach logic, same data, no streaming needed
+- Setup instructions for the n8n Telegram workflow in `doc/N8N-COACH-SETUP.md`
+- All responses in Portuguese (BR); monetary values formatted as R$ X.XXX,XX
+- API key never logged or exposed to the client
+
+---
+
 ## v1.5.0 — 2026-05-04
 
 ### Admin & Recurring Improvements
