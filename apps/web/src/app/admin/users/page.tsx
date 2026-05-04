@@ -13,15 +13,23 @@ interface UserRow {
   createdAt: string;
 }
 
+const INPUT_CLS = "w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-400 transition-colors";
+
+const BUILTIN_IDS = [
+  "00000000-0000-0000-0000-000000000000",
+  "00000000-0000-0000-0000-000000000002",
+];
+
 export default function AdminUsersPage() {
-  const [users, setUsers]       = useState<UserRow[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [saving, setSaving]     = useState(false);
-  const [error, setError]       = useState("");
-  const [success, setSuccess]   = useState("");
+  const [users,    setUsers]   = useState<UserRow[]>([]);
+  const [loading,  setLoading] = useState(true);
+  const [saving,   setSaving]  = useState(false);
+  const [error,    setError]   = useState("");
+  const [success,  setSuccess] = useState("");
 
   const [name,     setName]     = useState("");
   const [email,    setEmail]    = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isAdmin,  setIsAdmin]  = useState(false);
 
@@ -45,12 +53,12 @@ export default function AdminUsersPage() {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, isAdmin }),
+        body: JSON.stringify({ name, email, username, password, isAdmin }),
       });
       const data = await res.json();
       if (res.ok) {
         setSuccess("Usuário criado com sucesso.");
-        setName(""); setEmail(""); setPassword(""); setIsAdmin(false);
+        setName(""); setEmail(""); setUsername(""); setPassword(""); setIsAdmin(false);
         fetchUsers();
       } else {
         setError(data.error ?? "Erro ao criar usuário");
@@ -75,11 +83,6 @@ export default function AdminUsersPage() {
     else setError(data.error ?? "Erro ao excluir");
   }
 
-  const BUILTIN_IDS = [
-    "00000000-0000-0000-0000-000000000000",
-    "00000000-0000-0000-0000-000000000002",
-  ];
-
   return (
     <div className="space-y-6">
       <PageHeader title="Gerenciar Usuários" subtitle="Crie, visualize e exclua usuários do sistema." />
@@ -90,44 +93,66 @@ export default function AdminUsersPage() {
           <UserPlus size={15} className="text-sky-500" /> Novo usuário
         </p>
         <form onSubmit={handleCreate} className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
+
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Nome</label>
-            <input
-              value={name} onChange={(e) => setName(e.target.value)} required
-              placeholder="Nome completo"
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-400 transition-colors"
-            />
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Nome completo</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} required
+              placeholder="Nome completo" className={INPUT_CLS} />
           </div>
+
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-400">E-mail</label>
-            <input
-              type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-              placeholder="email@exemplo.com"
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-400 transition-colors"
-            />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+              placeholder="email@exemplo.com" className={INPUT_CLS} />
           </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Nome de usuário</label>
+            <input value={username} onChange={(e) => setUsername(e.target.value)} required
+              placeholder="Ex: joao.silva" autoComplete="off" className={INPUT_CLS} />
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Senha</label>
-            <input
-              type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
-              placeholder="Mínimo 6 caracteres"
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-400 transition-colors"
-            />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              required minLength={6} placeholder="Mínimo 6 caracteres" className={INPUT_CLS} />
           </div>
-          <div className="flex items-end pb-0.5">
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <div className="relative">
-                <input type="checkbox" checked={isAdmin} onChange={(e) => setIsAdmin(e.target.checked)} className="sr-only peer" />
-                <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 peer-checked:bg-sky-500 peer-checked:border-sky-500 transition-colors flex items-center justify-center">
-                  {isAdmin && (
-                    <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 8" fill="none">
-                      <path d="M1 4L3.5 6.5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
+
+          {/* Profile selector */}
+          <div className="@xl:col-span-2">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-2">Perfil</label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsAdmin(false)}
+                className={`flex-1 flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                  !isAdmin
+                    ? "border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300"
+                    : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300"
+                }`}
+              >
+                <User size={15} />
+                <div className="text-left">
+                  <p className="font-semibold">Usuário</p>
+                  <p className="text-[11px] opacity-70">Acesso padrão — sem gestão de usuários</p>
                 </div>
-              </div>
-              <span className="text-sm text-slate-700 dark:text-slate-300">Administrador</span>
-            </label>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAdmin(true)}
+                className={`flex-1 flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                  isAdmin
+                    ? "border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
+                    : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300"
+                }`}
+              >
+                <Shield size={15} />
+                <div className="text-left">
+                  <p className="font-semibold">Administrador</p>
+                  <p className="text-[11px] opacity-70">Acesso total — pode gerenciar usuários</p>
+                </div>
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -142,10 +167,8 @@ export default function AdminUsersPage() {
           )}
 
           <div className="@xl:col-span-2">
-            <button
-              type="submit" disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
+            <button type="submit" disabled={saving}
+              className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
               Criar usuário
             </button>
@@ -156,7 +179,7 @@ export default function AdminUsersPage() {
       {/* User list */}
       <Card>
         <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">
-          Usuários cadastrados
+          Usuários cadastrados ({users.length})
         </p>
         {loading ? (
           <div className="flex items-center justify-center py-8 text-slate-400">
@@ -165,28 +188,28 @@ export default function AdminUsersPage() {
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {users.map((u) => (
-              <div key={u.id} className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-3">
+              <div key={u.id} className="flex items-center justify-between py-3 gap-4">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold shrink-0 select-none">
                     {u.name.charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{u.name}</p>
                       {u.isAdmin
-                        ? <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full"><Shield size={9} /> Admin</span>
-                        : <span className="flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400 px-1.5 py-0.5 rounded-full"><User size={9} /> Usuário</span>
+                        ? <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full shrink-0"><Shield size={9} /> Admin</span>
+                        : <span className="flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400 px-1.5 py-0.5 rounded-full shrink-0"><User size={9} /> Usuário</span>
                       }
                     </div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">{u.email}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                      @{u.username} · {u.email}
+                    </p>
                   </div>
                 </div>
                 {!BUILTIN_IDS.includes(u.id) && (
-                  <button
-                    onClick={() => handleDelete(u.id)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
-                    title="Excluir usuário"
-                  >
+                  <button onClick={() => handleDelete(u.id)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0"
+                    title="Excluir usuário">
                     <Trash2 size={14} />
                   </button>
                 )}

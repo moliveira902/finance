@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
-import { findByUsername } from "@/lib/users";
+import { findByUsername, findByEmail } from "@/lib/users";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "dev-secret-key-change-in-production-32+"
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Usuário e senha são obrigatórios" }, { status: 400 });
   }
 
-  const user = await findByUsername(username);
+  const user = (await findByUsername(username)) ?? (await findByEmail(username));
   if (!user || user.password !== password) {
     return NextResponse.json({ error: "Usuário ou senha incorretos" }, { status: 401 });
   }

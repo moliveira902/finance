@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
-import { getAllUsers, createUser, deleteUser, findByEmail } from "@/lib/users";
+import { getAllUsers, createUser, deleteUser, findByEmail, findByUsername } from "@/lib/users";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "dev-secret-key-change-in-production-32+"
@@ -38,23 +38,28 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const { name, email, password, isAdmin = false } = body as {
-    name?: string; email?: string; password?: string; isAdmin?: boolean;
+  const { name, email, username, password, isAdmin = false } = body as {
+    name?: string; email?: string; username?: string; password?: string; isAdmin?: boolean;
   };
 
-  if (!name || !email || !password) {
+  if (!name || !email || !username || !password) {
     return NextResponse.json({ error: "Todos os campos são obrigatórios" }, { status: 400 });
   }
 
-  const emailLower = email.toLowerCase().trim();
+  const emailLower    = email.toLowerCase().trim();
+  const usernameLower = username.toLowerCase().trim();
+
   if (await findByEmail(emailLower)) {
     return NextResponse.json({ error: "E-mail já cadastrado" }, { status: 409 });
+  }
+  if (await findByUsername(usernameLower)) {
+    return NextResponse.json({ error: "Nome de usuário já está em uso" }, { status: 409 });
   }
 
   const userId = randomUUID();
   await createUser({
     id:        userId,
-    username:  emailLower,
+    username:  usernameLower,
     password,
     email:     emailLower,
     name:      name.trim(),
@@ -74,7 +79,6 @@ export async function DELETE(request: Request) {
   const { id } = await request.json().catch(() => ({}));
   if (!id) return NextResponse.json({ error: "ID obrigatório" }, { status: 400 });
 
-  // Prevent deleting built-in users
   const BUILTIN_IDS = [
     "00000000-0000-0000-0000-000000000000",
     "00000000-0000-0000-0000-000000000002",
