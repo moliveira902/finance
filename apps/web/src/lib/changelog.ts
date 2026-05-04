@@ -5,9 +5,26 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "1.6.0";
+export const CURRENT_VERSION = "1.7.0";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.7.0",
+    date: "2026-05-04",
+    title: "Casa Compartilhada",
+    items: [
+      "Modo Merge: una sua conta com a de um parceiro(a) e veja um painel consolidado do casal",
+      "Dashboard 'Casa' com KPIs, gráfico de barras empilhadas por categoria e lista de transações compartilhadas",
+      "Cálculo automático de acerto de contas — quem deve quanto a quem",
+      "Botão 'Fechar mês' registra o settlement e bloqueia recálculo",
+      "Seletor de mês no painel do casal para navegação histórica",
+      "Toggle 'Compartilhar com a Casa' na modal de transação",
+      "Fluxo de convite: gere um link em Configurações → Membros e envie ao parceiro(a)",
+      "Página de aceite de convite com escolha de modo (Join ou Merge)",
+      "Admin pode unir contas diretamente pelo painel de administração",
+      "Aba 'Casa' aparece automaticamente na sidebar quando uma casa está ativa",
+    ],
+  },
   {
     version: "1.6.0",
     date: "2026-05-04",

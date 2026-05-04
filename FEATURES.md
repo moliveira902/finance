@@ -1,5 +1,22 @@
 # FinanceApp — Release Notes
 
+## v1.7.0 — 2026-05-04
+
+### Shared Household Finances — "Casa Compartilhada"
+- **Merge mode**: two independent FinanceApp users link their accounts into a household; each user's private dashboard is untouched
+- New **"Casa"** tab in the sidebar — visible only when the user belongs to an active household
+- **Household dashboard** with three summary KPIs (combined total, owner share, partner share), stacked horizontal bar chart by category (Recharts), shared transaction list with colour-coded attribution dots, and a settle-up banner at the bottom
+- **Settle-up calculation**: configurable split ratio (default 50/50); banner shows who owes whom and how much; "Fechar mês" records the settlement and locks the period
+- **Month navigation**: chevron selector allows reviewing historical household data month by month
+- **Share toggle** on the transaction modal (shown only when user is in a household) — marks a transaction as shared with the household consolidated view
+- **Invite flow**: owner enters partner's email in Settings → Membros → Casa Compartilhada; a 48-hour invite link is generated; partner visits the link and chooses Join or Merge mode
+- **Invite accept page** (`/household/invite/[token]`): publicly accessible; detects if invitee is a registered user — Merge mode only offered to registered accounts; Join mode always available
+- **Admin: Unir contas** — admin can directly merge two user accounts into a household from the Admin panel without an invite flow
+- Privacy enforcement: partner never sees private transactions — the household dashboard issues two separate store reads and merges in application code, never in a single cross-user query
+- All household data stored in Upstash Redis (`household:{id}`, `household:by-user:{userId}`, `invite:household:{token}`, `household:settlement:{id}:{month}`)
+
+---
+
 ## v1.6.0 — 2026-05-04
 
 ### AI Financial Coach — "Meu Consultor"

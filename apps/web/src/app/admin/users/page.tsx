@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Trash2, UserPlus, Shield, User, Loader2, Pencil, X, Check } from "lucide-react";
+import { Trash2, UserPlus, Shield, User, Loader2, Pencil, X, Check, Home } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 
@@ -47,6 +47,12 @@ export default function AdminUsersPage() {
   const [editState,    setEditState]    = useState<EditState>({ name: "", email: "", username: "", password: "" });
   const [editSaving,   setEditSaving]   = useState(false);
   const [editError,    setEditError]    = useState("");
+
+  // Household merge
+  const [mergeOwner,   setMergeOwner]   = useState("");
+  const [mergeMember,  setMergeMember]  = useState("");
+  const [mergeSaving,  setMergeSaving]  = useState(false);
+  const [mergeMsg,     setMergeMsg]     = useState("");
 
   async function fetchUsers() {
     setLoading(true);
@@ -117,6 +123,26 @@ export default function AdminUsersPage() {
       setEditError("Erro de conexão.");
     } finally {
       setEditSaving(false);
+    }
+  }
+
+  async function handleMerge(e: React.FormEvent) {
+    e.preventDefault();
+    setMergeMsg("");
+    setMergeSaving(true);
+    try {
+      const res = await fetch("/api/admin/households", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ownerUserId: mergeOwner, memberUserId: mergeMember }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      setMergeMsg(res.ok ? "Contas unidas com sucesso." : (data.error ?? "Erro ao unir contas."));
+      if (res.ok) { setMergeOwner(""); setMergeMember(""); }
+    } catch {
+      setMergeMsg("Erro de conexão.");
+    } finally {
+      setMergeSaving(false);
     }
   }
 
@@ -321,6 +347,47 @@ export default function AdminUsersPage() {
             ))}
           </div>
         )}
+      </Card>
+
+      {/* Merge households */}
+      <Card>
+        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+          <Home size={15} className="text-sky-500" /> Unir contas (Casa Compartilhada)
+        </p>
+        <form onSubmit={handleMerge} className="space-y-4">
+          <div className="grid grid-cols-1 @xl:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Responsável (owner) — ID do usuário</label>
+              <select value={mergeOwner} onChange={(e) => setMergeOwner(e.target.value)}
+                className={INPUT_CLS} required>
+                <option value="">Selecionar...</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name || u.username} ({u.email})</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Parceiro(a) (member) — ID do usuário</label>
+              <select value={mergeMember} onChange={(e) => setMergeMember(e.target.value)}
+                className={INPUT_CLS} required>
+                <option value="">Selecionar...</option>
+                {users.filter((u) => u.id !== mergeOwner).map((u) => (
+                  <option key={u.id} value={u.id}>{u.name || u.username} ({u.email})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {mergeMsg && (
+            <p className={`text-xs font-medium ${mergeMsg.includes("sucesso") ? "text-emerald-500" : "text-red-500"}`}>
+              {mergeMsg}
+            </p>
+          )}
+          <button type="submit" disabled={mergeSaving || !mergeOwner || !mergeMember}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-medium transition-colors">
+            <Home size={13} />
+            {mergeSaving ? "Unindo…" : "Unir contas"}
+          </button>
+        </form>
       </Card>
     </div>
   );

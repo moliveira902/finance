@@ -1,0 +1,115 @@
+{
+  "name": "Upstash Redis → Telegram Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "Schedule Trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://YOUR_UPSTASH_URL/lpop/notifications",
+        "authentication": "none",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_UPSTASH_TOKEN"
+            }
+          ]
+        }
+      },
+      "id": "Upstash LPOP",
+      "name": "Upstash LPOP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"result\"]}}",
+              "operation": "notEmpty"
+            }
+          ]
+        }
+      },
+      "id": "IF Has Message",
+      "name": "IF Has Message",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "={{$json[\"result\"]}}"
+      },
+      "id": "Send Telegram",
+      "name": "Send Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [800, 250],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL",
+          "name": "Telegram Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Upstash LPOP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upstash LPOP": {
+      "main": [
+        [
+          {
+            "node": "IF Has Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Has Message": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

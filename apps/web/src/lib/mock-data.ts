@@ -26,6 +26,8 @@ export type Transaction = {
   recurringCount?: number;
   aiCategory?: string;
   aiConfidence?: number;
+  isShared?: boolean;
+  createdByMemberId?: string;
 };
 
 export const categories: Category[] = [
@@ -47,6 +49,8 @@ export type Member = {
   email: string;
   role: "owner" | "member";
   joinedAt: string;
+  mode?: "join" | "merge";
+  userId?: string;
 };
 
 export type UserProfile = {

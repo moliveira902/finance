@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { RepeatIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { RepeatIcon, Home } from "lucide-react";
 import { Modal, FieldRow, Input, Select } from "./Modal";
 import { Button } from "@/components/ui/Button";
 import { useFinanceStore } from "@/stores/financeStore";
@@ -26,14 +26,23 @@ export function TransactionModal({ open, onClose, initial }: Props) {
   const [isRecurring,     setIsRecurring]     = useState(initial?.isRecurring ?? false);
   const [recurringPeriod, setRecurringPeriod] = useState<"monthly" | "yearly">(initial?.recurringPeriod ?? "monthly");
   const [recurringCount,  setRecurringCount]  = useState<string>(initial?.recurringCount ? String(initial.recurringCount) : "");
+  const [isShared,        setIsShared]        = useState(initial?.isShared ?? false);
+  const [hasHousehold,    setHasHousehold]    = useState(false);
   const [error,           setError]           = useState("");
+
+  useEffect(() => {
+    fetch("/api/household")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { household?: unknown } | null) => { if (d?.household) setHasHousehold(true); })
+      .catch(() => {});
+  }, []);
 
   function reset() {
     setDesc(""); setAmount(""); setType("expense");
     setCatId(categories[0]?.id ?? "");
     setAccId(accounts[0]?.id ?? "");
     setDate(today); setIsRecurring(false); setRecurringPeriod("monthly");
-    setRecurringCount(""); setError("");
+    setRecurringCount(""); setIsShared(false); setError("");
   }
 
   function handleClose() { reset(); onClose(); }
@@ -60,6 +69,7 @@ export function TransactionModal({ open, onClose, initial }: Props) {
       isRecurring,
       recurringPeriod:  isRecurring ? recurringPeriod : undefined,
       recurringCount:   isRecurring && countNum ? countNum : undefined,
+      isShared: hasHousehold ? isShared : undefined,
     };
 
     if (initial) {
@@ -167,6 +177,23 @@ export function TransactionModal({ open, onClose, initial }: Props) {
             </div>
           )}
         </div>
+
+        {/* Shared with household toggle — only shown when user has a household */}
+        {hasHousehold && (
+          <button
+            type="button"
+            onClick={() => setIsShared((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+              <Home size={15} className={isShared ? "text-sky-500" : "text-slate-400"} />
+              Compartilhar com a Casa
+            </span>
+            <div className={`w-9 h-5 rounded-full transition-colors relative ${isShared ? "bg-sky-500" : "bg-slate-200 dark:bg-slate-700"}`}>
+              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${isShared ? "translate-x-4" : "translate-x-0.5"}`} />
+            </div>
+          </button>
+        )}
 
         {error && (
           <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-xl px-3 py-2">

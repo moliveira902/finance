@@ -1,16 +1,17 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
   LayoutDashboard, ArrowLeftRight, RepeatIcon,
-  BarChart2, Settings, LogOut, Wallet, ShieldCheck, Bot,
+  BarChart2, Settings, LogOut, Wallet, ShieldCheck, Bot, Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFinanceStore } from "@/stores/financeStore";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ChangelogModal } from "@/components/ui/ChangelogModal";
 import { CURRENT_VERSION } from "@/lib/changelog";
+import type { Household } from "@/lib/household";
 
 function nameInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -43,6 +44,16 @@ export function Sidebar() {
   const initials    = nameInitials(profile.name);
   const displayName = shortName(profile.name);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [household,     setHousehold]     = useState<Household | null>(null);
+
+  useEffect(() => {
+    fetch("/api/household")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { household?: Household | null } | null) => {
+        if (d) setHousehold(d.household ?? null);
+      })
+      .catch(() => {});
+  }, []);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -86,6 +97,26 @@ export function Sidebar() {
             </Link>
           );
         })}
+        {household && (
+          <Link
+            href="/household"
+            className={cn(
+              "flex items-center gap-3 h-9 px-3 rounded-lg text-sm font-medium transition-colors",
+              pathname.startsWith("/household")
+                ? "bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
+            )}
+          >
+            <Home
+              size={15}
+              className={cn(
+                "shrink-0",
+                pathname.startsWith("/household") ? "text-sky-500" : "text-slate-400 dark:text-slate-500"
+              )}
+            />
+            Casa
+          </Link>
+        )}
         {currentUser?.isAdmin && (
           <Link
             href="/admin/users"

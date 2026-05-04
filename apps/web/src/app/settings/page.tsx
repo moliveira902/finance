@@ -13,6 +13,7 @@ import { useFinanceStore } from "@/stores/financeStore";
 import { formatBRL } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { Account, Category, Member } from "@/lib/mock-data";
+import type { Household } from "@/lib/household";
 
 type Tab = "profile" | "members" | "accounts" | "categories" | "notifications" | "ai" | "integrations" | "data";
 
@@ -127,6 +128,63 @@ export default function SettingsPage() {
     setTimeout(() => setMemberAdded(false), 2000);
   }
 
+  // Household (merge mode)
+  const [household,       setHousehold]       = useState<Household | null | undefined>(undefined);
+  const [inviteEmail,     setInviteEmail]     = useState("");
+  const [inviteUrl,       setInviteUrl]       = useState<string | null>(null);
+  const [inviteCopied,    setInviteCopied]    = useState(false);
+  const [inviteLoading,   setInviteLoading]   = useState(false);
+  const [inviteError,     setInviteError]     = useState("");
+  const [leavingHousehold, setLeavingHousehold] = useState(false);
+
+  useEffect(() => {
+    if (tab !== "members") return;
+    fetch("/api/household")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { household?: Household | null } | null) => {
+        setHousehold(d?.household ?? null);
+      })
+      .catch(() => setHousehold(null));
+  }, [tab]);
+
+  async function handleSendInvite() {
+    if (!inviteEmail.trim()) return;
+    setInviteLoading(true); setInviteError("");
+    try {
+      const res = await fetch("/api/household/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteeEmail: inviteEmail.trim() }),
+      });
+      const data = await res.json() as { inviteUrl?: string; error?: string };
+      if (!res.ok) { setInviteError(data.error ?? "Erro ao gerar convite."); return; }
+      setInviteUrl(data.inviteUrl ?? null);
+    } catch {
+      setInviteError("Erro de rede.");
+    } finally {
+      setInviteLoading(false);
+    }
+  }
+
+  function handleCopyInvite() {
+    if (!inviteUrl) return;
+    navigator.clipboard.writeText(inviteUrl).then(() => {
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
+    });
+  }
+
+  async function handleLeaveHousehold() {
+    if (!confirm("Tem certeza que deseja sair da casa compartilhada?")) return;
+    setLeavingHousehold(true);
+    try {
+      await fetch("/api/household/leave", { method: "DELETE" });
+      setHousehold(null);
+    } finally {
+      setLeavingHousehold(false);
+    }
+  }
+
   // System config (API key)
   const [sysConfig, setSysConfig] = useState<{ ingestApiKey: string; ingestUrl: string } | null>(null);
   const [keyCopied,  setKeyCopied]  = useState(false);
@@ -234,6 +292,7 @@ export default function SettingsPage() {
 
           {/* ── Members ── */}
           {tab === "members" && (
+            <>
             <Card>
               <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Membros da Conta</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
@@ -316,6 +375,87 @@ export default function SettingsPage() {
                 </div>
               </div>
             </Card>
+
+            {/* ── Casa Compartilhada (Merge mode) ── */}
+            <Card>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Casa Compartilhada</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
+                Una sua conta com a de um parceiro(a) para visualizar as finanças do casal.
+              </p>
+
+              {household === undefined && (
+                <p className="text-sm text-slate-400 text-center py-4">Carregando...</p>
+              )}
+
+              {household !== undefined && household !== null && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/50">
+                    <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {nameInitials(household.memberName || household.ownerName)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-sky-800 dark:text-sky-300">{household.name}</p>
+                      <p className="text-xs text-sky-600 dark:text-sky-500">
+                        {household.ownerName} & {household.memberName} · {Math.round(household.splitRatio * 100)}/{Math.round((1 - household.splitRatio) * 100)}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLeaveHousehold}
+                    disabled={leavingHousehold}
+                    className="text-sm text-red-500 hover:text-red-600 disabled:opacity-50 transition-colors"
+                  >
+                    {leavingHousehold ? "Saindo…" : "Sair da casa compartilhada"}
+                  </button>
+                </div>
+              )}
+
+              {household !== undefined && household === null && (
+                <div className="space-y-4">
+                  {!inviteUrl ? (
+                    <>
+                      <div className="grid grid-cols-1 @sm:grid-cols-2 gap-3">
+                        <input
+                          type="email"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          placeholder="Email do(a) parceiro(a)"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 transition-colors"
+                        />
+                        <Button size="sm" onClick={handleSendInvite} disabled={inviteLoading || !inviteEmail.trim()}>
+                          {inviteLoading ? "Gerando…" : "Gerar convite"}
+                        </Button>
+                      </div>
+                      {inviteError && <p className="text-xs text-red-500">{inviteError}</p>}
+                    </>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Envie este link para {inviteEmail}:
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-mono text-slate-700 dark:text-slate-300 truncate">
+                          {inviteUrl}
+                        </code>
+                        <button
+                          onClick={handleCopyInvite}
+                          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          {inviteCopied ? <><Check size={11} className="text-emerald-500" /> Copiado</> : <><Copy size={11} /> Copiar</>}
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => { setInviteUrl(null); setInviteEmail(""); }}
+                        className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                      >
+                        Gerar novo convite
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+            </>
           )}
 
           {/* ── Accounts ── */}
