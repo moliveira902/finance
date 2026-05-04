@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -8,6 +9,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useFinanceStore } from "@/stores/financeStore";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { ChangelogModal } from "@/components/ui/ChangelogModal";
+import { CURRENT_VERSION } from "@/lib/changelog";
 
 function nameInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -38,6 +41,7 @@ export function Sidebar() {
   const currentUser = useCurrentUser();
   const initials    = nameInitials(profile.name);
   const displayName = shortName(profile.name);
+  const [showChangelog, setShowChangelog] = useState(false);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -125,7 +129,19 @@ export function Sidebar() {
           <LogOut size={14} className="shrink-0" />
           Sair da conta
         </button>
+
+        {/* Version badge */}
+        <button
+          onClick={() => setShowChangelog(true)}
+          className="mt-2 w-full flex justify-center"
+        >
+          <span className="text-[10px] text-slate-300 dark:text-slate-600 hover:text-sky-400 dark:hover:text-sky-500 transition-colors font-mono">
+            v{CURRENT_VERSION}
+          </span>
+        </button>
       </div>
+
+      <ChangelogModal open={showChangelog} onClose={() => setShowChangelog(false)} />
     </aside>
   );
 }

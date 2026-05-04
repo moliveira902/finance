@@ -2,6 +2,8 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Wallet, TrendingUp, Sparkles, Shield, CheckCircle } from "lucide-react";
+import { ChangelogModal } from "@/components/ui/ChangelogModal";
+import { CURRENT_VERSION } from "@/lib/changelog";
 
 const FEATURES = [
   { icon: TrendingUp, title: "Análise inteligente", desc: "Relatórios automáticos de receitas, despesas e tendências mensais." },
@@ -20,6 +22,7 @@ export default function LoginPage() {
 }
 
 function LoginPageInner() {
+  const [showChangelog, setShowChangelog] = useState(false);
   const router       = useRouter();
   const searchParams = useSearchParams();
   const verified     = searchParams.get("verified") === "1";
@@ -103,6 +106,7 @@ function LoginPageInner() {
     tokenError === "invalid_token" ? "Link inválido. Tente criar a conta novamente." : "";
 
   return (
+    <>
     <div className="min-h-screen flex bg-slate-950">
       {/* Left branding panel */}
       <div className="hidden lg:flex w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-slate-900 to-sky-950 border-r border-white/5">
@@ -138,7 +142,15 @@ function LoginPageInner() {
           </div>
         </div>
 
-        <p className="text-xs text-slate-600">© 2026 FinanceApp · Brasil</p>
+        <div className="flex items-center gap-3">
+          <p className="text-xs text-slate-600">© 2026 FinanceApp · Brasil</p>
+          <button
+            onClick={() => setShowChangelog(true)}
+            className="text-xs text-slate-500 hover:text-sky-400 transition-colors font-mono"
+          >
+            v{CURRENT_VERSION}
+          </button>
+        </div>
       </div>
 
       {/* Right form panel */}
@@ -150,6 +162,16 @@ function LoginPageInner() {
               <Wallet size={18} className="text-white" />
             </div>
             <span className="text-lg font-bold text-white">FinanceApp</span>
+          </div>
+
+          {/* Mobile version badge */}
+          <div className="lg:hidden flex justify-end mb-3">
+            <button
+              onClick={() => setShowChangelog(true)}
+              className="text-xs text-slate-500 hover:text-sky-400 transition-colors font-mono"
+            >
+              v{CURRENT_VERSION}
+            </button>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl shadow-black/20 p-8">
@@ -404,5 +426,8 @@ function LoginPageInner() {
         </div>
       </div>
     </div>
+
+    <ChangelogModal open={showChangelog} onClose={() => setShowChangelog(false)} />
+    </>
   );
 }

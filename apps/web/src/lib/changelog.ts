@@ -1,0 +1,87 @@
+export interface ChangelogEntry {
+  version: string;
+  date: string;
+  title: string;
+  items: string[];
+}
+
+export const CURRENT_VERSION = "1.5.0";
+
+export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.5.0",
+    date: "2026-05-04",
+    title: "Admin & Recorrentes",
+    items: [
+      "Recorrentes: campo de número de períodos (meses/anos) com prévia do total de compromisso",
+      "Painel admin: edição inline de usuários — nome, usuário, e-mail e senha",
+      "Painel admin renderizado dentro do layout principal da aplicação",
+      "Seletor visual de perfil (Usuário / Administrador) no cadastro de usuários",
+    ],
+  },
+  {
+    version: "1.4.0",
+    date: "2026-05-04",
+    title: "Correções & Melhorias",
+    items: [
+      "Saldo das contas atualizado automaticamente ao adicionar, editar ou excluir transações",
+      "Nome e e-mail do perfil preenchidos automaticamente a partir do login",
+      "Patrimônio Líquido exibe o impacto mensal das recorrentes fixas",
+      "Página Recorrentes: KPIs de total mensal, receitas, despesas e impacto anual",
+      "Remoção completa do módulo Orçamentos",
+    ],
+  },
+  {
+    version: "1.3.0",
+    date: "2026-05-03",
+    title: "Gestão de Usuários & Recorrentes",
+    items: [
+      "Cadastro de conta no login com verificação de e-mail",
+      "Dois perfis: Administrador (acesso total) e Usuário (acesso padrão)",
+      "Painel admin para criar, visualizar e excluir usuários",
+      "Login aceita nome de usuário ou e-mail",
+      "Migração para Upstash Redis — dados persistem entre instâncias serverless",
+      "Transações recorrentes mensais e anuais com página dedicada",
+      "Remoção do módulo Orçamentos — substituído por Recorrentes",
+    ],
+  },
+  {
+    version: "1.2.0",
+    date: "2026-04-30",
+    title: "API de Ingestão & Persistência",
+    items: [
+      "Endpoint REST POST /api/ingest/transactions protegido por x-api-key",
+      "Suporte a corpo em array [ {…} ] — compatível com n8n por padrão",
+      "Alias em português: 'despesa' e 'receita' aceitos como tipo",
+      "Rate limiting (10 req / 60 s) e logs estruturados no ingest",
+      "KV compartilhado substitui /tmp — dados não se perdem entre instâncias",
+      "Página /test-ingest para validação manual da API",
+    ],
+  },
+  {
+    version: "1.1.0",
+    date: "2026-04-29",
+    title: "Aplicação Core",
+    items: [
+      "Dashboard com KPIs, gráfico de fluxo de caixa e pizza por categoria",
+      "Página de transações com filtros, add/edit/delete e badge de IA",
+      "Gestão de contas com atualização de saldo em tempo real",
+      "Sincronização entre dispositivos via store no servidor",
+      "Layout mobile real + simulador de celular no desktop",
+      "Autenticação JWT com cookie e opção 'Manter conectado'",
+    ],
+  },
+  {
+    version: "1.0.0",
+    date: "2026-04-28",
+    title: "Lançamento Inicial",
+    items: [
+      "Scaffold Next.js 14 App Router em monorepo pnpm",
+      "Tailwind CSS + dark mode + container queries",
+      "Store Zustand com persistência em localStorage",
+      "Gráficos com Recharts",
+      "Login com painel de identidade visual",
+      "Sidebar + Topbar com alternância de viewport e tema",
+    ],
+  },
+];
