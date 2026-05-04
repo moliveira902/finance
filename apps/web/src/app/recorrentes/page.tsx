@@ -1,8 +1,7 @@
 "use client";
 import { useState } from "react";
-import { RepeatIcon, Plus, Pencil, Trash2, CheckCircle2, Clock } from "lucide-react";
-import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
+import { RepeatIcon, Plus, Pencil, Trash2, TrendingDown, TrendingUp, CalendarDays } from "lucide-react";
+import { Card, CardLabel, CardValue } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TransactionModal } from "@/components/modals/TransactionModal";
@@ -11,43 +10,20 @@ import { formatBRL } from "@/lib/mock-data";
 import type { Transaction } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
-// Determine if a recurring transaction already has an occurrence in the current period
-function isDue(tx: Transaction, allTransactions: Transaction[]): boolean {
-  const now   = new Date();
-  const year  = now.getFullYear();
-  const month = now.getMonth();
-
-  if (tx.recurringPeriod === "yearly") {
-    return !allTransactions.some((t) => {
-      if (t.id === tx.id) return false;
-      const d = new Date(t.date);
-      return (
-        d.getFullYear() === year &&
-        t.description.toLowerCase() === tx.description.toLowerCase()
-      );
-    });
-  }
-
-  // monthly (default)
-  return !allTransactions.some((t) => {
-    if (t.id === tx.id) return false;
-    const d = new Date(t.date);
-    return (
-      d.getFullYear() === year &&
-      d.getMonth() === month &&
-      t.description.toLowerCase() === tx.description.toLowerCase()
-    );
-  });
+function monthlyEquivalent(tx: Transaction): number {
+  return tx.recurringPeriod === "yearly"
+    ? Math.abs(tx.amount) / 12
+    : Math.abs(tx.amount);
 }
 
 export default function RecorrentesPage() {
-  const { transactions, addTransaction, deleteTransaction } = useFinanceStore();
-  const [showNew, setShowNew]   = useState(false);
-  const [editing, setEditing]   = useState<Transaction | null>(null);
+  const { transactions, deleteTransaction } = useFinanceStore();
+  const [showNew, setShowNew] = useState(false);
+  const [editing, setEditing] = useState<Transaction | null>(null);
 
   const recurring = transactions.filter((t) => t.isRecurring);
 
-  // Deduplicate by description — show only the latest template per description
+  // Deduplicate by description — keep the most recent template per description
   const seen = new Set<string>();
   const templates = recurring.filter((t) => {
     const key = t.description.toLowerCase();
@@ -56,21 +32,17 @@ export default function RecorrentesPage() {
     return true;
   });
 
-  const dueCount = templates.filter((t) => isDue(t, transactions)).length;
+  // Totals
+  const monthlyExpenses = templates
+    .filter((t) => t.type === "expense")
+    .reduce((s, t) => s + monthlyEquivalent(t), 0);
 
-  function handleRegisterOccurrence(tx: Transaction) {
-    const today = new Date().toISOString().slice(0, 10);
-    addTransaction({
-      description:     tx.description,
-      amount:          tx.amount,
-      type:            tx.type,
-      category:        tx.category,
-      account:         tx.account,
-      date:            today,
-      isRecurring:     true,
-      recurringPeriod: tx.recurringPeriod,
-    });
-  }
+  const monthlyIncome = templates
+    .filter((t) => t.type === "income")
+    .reduce((s, t) => s + monthlyEquivalent(t), 0);
+
+  const monthlyNet = monthlyIncome - monthlyExpenses;
+  const annualNet  = monthlyNet * 12;
 
   return (
     <div className="space-y-6">
@@ -84,23 +56,31 @@ export default function RecorrentesPage() {
         }
       />
 
-      {/* Summary */}
-      <div className="grid grid-cols-1 @sm:grid-cols-3 gap-4">
-        <Card className="py-4">
-          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total recorrentes</p>
-          <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{templates.length}</p>
+      {/* Summary totals */}
+      <div className="grid grid-cols-2 @3xl:grid-cols-4 gap-4">
+        <Card>
+          <CardLabel>Despesas / mês</CardLabel>
+          <CardValue className="text-red-500 dark:text-red-400">{formatBRL(monthlyExpenses)}</CardValue>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Compromissos fixos mensais</p>
         </Card>
-        <Card className="py-4">
-          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Em aberto</p>
-          <p className={cn("text-xl font-bold mt-1", dueCount > 0 ? "text-amber-500" : "text-emerald-600 dark:text-emerald-400")}>
-            {dueCount}
-          </p>
+        <Card>
+          <CardLabel>Receitas / mês</CardLabel>
+          <CardValue className="text-emerald-600 dark:text-emerald-400">{formatBRL(monthlyIncome)}</CardValue>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Entradas fixas mensais</p>
         </Card>
-        <Card className="py-4">
-          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Em dia</p>
-          <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-            {templates.length - dueCount}
-          </p>
+        <Card>
+          <CardLabel>Saldo líquido / mês</CardLabel>
+          <CardValue className={monthlyNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}>
+            {monthlyNet >= 0 ? "+" : "−"}{formatBRL(Math.abs(monthlyNet))}
+          </CardValue>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Receitas − despesas fixas</p>
+        </Card>
+        <Card>
+          <CardLabel>Impacto anual</CardLabel>
+          <CardValue className={annualNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}>
+            {annualNet >= 0 ? "+" : "−"}{formatBRL(Math.abs(annualNet))}
+          </CardValue>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Projeção para 12 meses</p>
         </Card>
       </div>
 
@@ -116,7 +96,8 @@ export default function RecorrentesPage() {
       ) : (
         <div className="grid grid-cols-1 @2xl:grid-cols-2 gap-4">
           {templates.map((tx) => {
-            const due = isDue(tx, transactions);
+            const monthly = monthlyEquivalent(tx);
+            const annual  = monthly * 12;
             return (
               <Card key={tx.id} className="group">
                 <div className="flex items-start justify-between">
@@ -127,7 +108,8 @@ export default function RecorrentesPage() {
                     <div>
                       <p className="font-semibold text-slate-900 dark:text-white text-sm">{tx.description}</p>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className="text-xs text-slate-400 dark:text-slate-500">
+                        <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
+                          <CalendarDays size={10} />
                           {tx.recurringPeriod === "yearly" ? "Anual" : "Mensal"}
                         </span>
                         <span className="text-xs text-slate-300 dark:text-slate-600">·</span>
@@ -140,40 +122,45 @@ export default function RecorrentesPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {due ? (
-                      <Badge variant="warning" className="text-[10px]">
-                        <Clock size={9} /> Em aberto
-                      </Badge>
-                    ) : (
-                      <Badge variant="success" className="text-[10px]">
-                        <CheckCircle2 size={9} /> Em dia
-                      </Badge>
-                    )}
+                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-all">
                     <button onClick={() => setEditing(tx)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/30 opacity-0 group-hover:opacity-100 transition-all">
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-colors">
                       <Pencil size={12} />
                     </button>
                     <button onClick={() => deleteTransaction(tx.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 opacity-0 group-hover:opacity-100 transition-all">
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
                       <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-50 dark:border-slate-700/50">
-                  <span className={cn(
-                    "text-base font-bold tabular-nums",
-                    tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-800 dark:text-slate-200"
-                  )}>
-                    {tx.type === "income" ? "+" : "−"}{formatBRL(Math.abs(tx.amount))}
-                  </span>
-
-                  {due && (
-                    <Button size="sm" onClick={() => handleRegisterOccurrence(tx)}>
-                      <Plus size={12} /> Registrar ocorrência
-                    </Button>
-                  )}
+                {/* Amount breakdown */}
+                <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-50 dark:border-slate-700/50">
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Por período</p>
+                    <span className={cn(
+                      "text-base font-bold tabular-nums",
+                      tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-800 dark:text-slate-200"
+                    )}>
+                      {tx.type === "income" ? "+" : "−"}{formatBRL(Math.abs(tx.amount))}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">
+                      {tx.recurringPeriod === "yearly" ? "Equiv. mensal" : "Impacto anual"}
+                    </p>
+                    <span className={cn(
+                      "text-sm font-semibold tabular-nums flex items-center gap-1",
+                      tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                    )}>
+                      {tx.type === "income"
+                        ? <TrendingUp size={12} />
+                        : <TrendingDown size={12} />}
+                      {tx.recurringPeriod === "yearly"
+                        ? formatBRL(monthly)
+                        : formatBRL(annual)}
+                    </span>
+                  </div>
                 </div>
               </Card>
             );

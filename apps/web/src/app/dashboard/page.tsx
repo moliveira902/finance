@@ -105,6 +105,24 @@ function buildCategoryBreakdown(txs: Transaction[]) {
   return Array.from(map.values()).sort((a, b) => b.value - a.value).slice(0, 6);
 }
 
+function monthlyRecurringNet(txs: Transaction[]): number {
+  const seen = new Set<string>();
+  return txs
+    .filter((t) => t.isRecurring)
+    .filter((t) => {
+      const key = t.description.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .reduce((s, t) => {
+      const monthly = t.recurringPeriod === "yearly"
+        ? Math.abs(t.amount) / 12
+        : Math.abs(t.amount);
+      return t.type === "income" ? s + monthly : s - monthly;
+    }, 0);
+}
+
 export default function DashboardPage() {
   const { transactions, accounts } = useFinanceStore();
 
@@ -120,6 +138,7 @@ export default function DashboardPage() {
   const netWorth     = totalAssets - totalDebt;
   const income       = monthTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
   const expenses     = Math.abs(monthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0));
+  const monthlyFixedNet = monthlyRecurringNet(transactions);
   const recent            = [...transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   const monthlyTrend      = buildMonthlyTrend(transactions);
   const catBreakdown      = buildCategoryBreakdown(monthTxs);
@@ -131,7 +150,8 @@ export default function DashboardPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 @3xl:grid-cols-4 gap-4">
-        <KpiCard label="Patrimônio Líquido" value={formatBRL(netWorth)}      sub="Ativos − dívidas"          />
+        <KpiCard label="Patrimônio Líquido" value={formatBRL(netWorth)}
+          sub={`Fixos/mês: ${monthlyFixedNet >= 0 ? "+" : "−"}${formatBRL(Math.abs(monthlyFixedNet))}`} />
         <KpiCard label="Receitas do mês"     value={formatBRL(income)}        sub="Salário + freelance"       />
         <KpiCard label="Despesas do mês"     value={formatBRL(expenses)}      sub="Total de saídas"           positive={expenses < income} />
         <KpiCard label="Saldo Livre"         value={formatBRL(income - expenses)} sub="Disponível para investir" positive={income - expenses > 0} />

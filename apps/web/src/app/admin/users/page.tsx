@@ -8,6 +8,7 @@ interface UserRow {
   id: string;
   username: string;
   email: string;
+  password: string;
   name: string;
   isAdmin?: boolean;
   createdAt: string;
@@ -203,6 +204,9 @@ export default function AdminUsersPage() {
                     </div>
                     <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
                       @{u.username} · {u.email}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                      Senha: <code className="font-mono text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-[11px]">{u.password}</code>
                     </p>
                   </div>
                 </div>

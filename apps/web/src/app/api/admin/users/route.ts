@@ -26,7 +26,7 @@ export async function GET() {
   const users = await getAllUsers();
   return NextResponse.json({
     users: users.map((u) => ({
-      id: u.id, username: u.username, email: u.email,
+      id: u.id, username: u.username, email: u.email, password: u.password,
       name: u.name, tenantId: u.tenantId, isAdmin: u.isAdmin, createdAt: u.createdAt,
     })),
   });
