@@ -674,14 +674,20 @@ export default function SettingsPage() {
                   {/* Payload example */}
                   <div className="space-y-1.5">
                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Exemplo de payload (JSON)</p>
-                    <pre className="px-3 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-mono text-slate-600 dark:text-slate-400 overflow-x-auto">{`{
-  "description": "Supermercado Extra",
-  "amount": 387.50,
-  "type": "expense",
-  "date": "2026-04-28",
-  "category": "Alimentação",
-  "account": "Conta Corrente"
-}`}</pre>
+                    <pre className="px-3 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-mono text-slate-600 dark:text-slate-400 overflow-x-auto">{`[
+  {
+    "user_email": "usuario@email.com",
+    "description": "Supermercado Extra",
+    "amount": 387.50,
+    "type": "expense",
+    "date": "2026-04-28",
+    "category": "Alimentação",
+    "account": "Conta Corrente"
+  }
+]`}</pre>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                      <code className="text-slate-500">user_email</code> ou <code className="text-slate-500">username</code> identifica o usuário destino. Omita para usar o usuário padrão.
+                    </p>
                   </div>
 
                   <div className="pt-1 text-xs text-slate-400 dark:text-slate-500">

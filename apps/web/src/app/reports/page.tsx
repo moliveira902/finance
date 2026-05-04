@@ -169,33 +169,43 @@ export default function ReportsPage() {
         subtitle="Análise financeira detalhada"
         actions={
           <>
-            {/* View mode toggle — only shown when user is in a household */}
-            {household && (
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 gap-0.5">
-                <button
-                  onClick={() => setViewMode("personal")}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-                    viewMode === "personal"
-                      ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm"
-                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-                  )}
-                >
-                  <User size={12} /> Minha conta
-                </button>
-                <button
-                  onClick={() => setViewMode("household")}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-                    viewMode === "household"
-                      ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm"
-                      : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-                  )}
-                >
-                  <Users size={12} /> Visão do casal
-                </button>
-              </div>
-            )}
+            {/* View mode toggle — always visible; disabled when no household */}
+            <div
+              className={cn(
+                "flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 gap-0.5",
+                !household && "opacity-50"
+              )}
+              title={!household ? "Configure uma casa compartilhada em Configurações → Membros" : undefined}
+            >
+              <button
+                onClick={() => household && setViewMode("personal")}
+                disabled={!household}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                  viewMode === "personal"
+                    ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm"
+                    : "text-slate-500 dark:text-slate-400",
+                  household && "hover:text-slate-700 dark:hover:text-slate-300",
+                  !household && "cursor-not-allowed"
+                )}
+              >
+                <User size={12} /> Minha conta
+              </button>
+              <button
+                onClick={() => household && setViewMode("household")}
+                disabled={!household}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                  viewMode === "household"
+                    ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm"
+                    : "text-slate-500 dark:text-slate-400",
+                  household && "hover:text-slate-700 dark:hover:text-slate-300",
+                  !household && "cursor-not-allowed"
+                )}
+              >
+                <Users size={12} /> Visão do casal
+              </button>
+            </div>
 
             {/* Month selector */}
             <div className="relative">
