@@ -2,7 +2,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, ArrowLeftRight, RepeatIcon, BarChart2, Settings,
-  Wifi, Signal,
+  Wifi, Signal, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,13 @@ const NAV = [
 function NavTabs({ compact = false }: { compact?: boolean }) {
   const pathname = usePathname();
   const router   = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <div className={cn("flex items-center justify-around", compact ? "px-1" : "px-2")}>
       {NAV.map(({ href, icon: Icon, label }) => {
@@ -40,6 +47,19 @@ function NavTabs({ compact = false }: { compact?: boolean }) {
           </button>
         );
       })}
+      <button
+        onClick={handleLogout}
+        className={cn(
+          "flex flex-col items-center gap-0.5 rounded-xl transition-colors min-w-0",
+          compact ? "px-2 py-1" : "px-3 py-1.5",
+          "text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400"
+        )}
+      >
+        <LogOut size={compact ? 20 : 22} strokeWidth={1.8} />
+        <span className={cn("font-semibold truncate", compact ? "text-[10px]" : "text-[9px]")}>
+          Sair
+        </span>
+      </button>
     </div>
   );
 }

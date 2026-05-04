@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "1.7.0";
+export const CURRENT_VERSION = "1.8.0";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.8.0",
+    date: "2026-05-04",
+    title: "Origem de Transações & Melhorias Mobile",
+    items: [
+      "Novo campo 'origem' nas transações: Telegram (via n8n) ou Manual (inserido no app)",
+      "Badge 'Telegram' exibido na lista de transações para entradas enviadas pelo bot",
+      "Botão 'Sair' adicionado à barra de navegação mobile (real e simulador)",
+      "Integração n8n: campo 'user_email' ou 'username' no payload define o usuário destino — suporte a múltiplos usuários numa única instância",
+    ],
+  },
   {
     version: "1.7.0",
     date: "2026-05-04",

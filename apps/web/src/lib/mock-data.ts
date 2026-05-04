@@ -28,6 +28,7 @@ export type Transaction = {
   aiConfidence?: number;
   isShared?: boolean;
   createdByMemberId?: string;
+  source?: "telegram" | "manual";
 };
 
 export const categories: Category[] = [

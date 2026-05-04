@@ -1,5 +1,15 @@
 # FinanceApp — Release Notes
 
+## v1.8.0 — 2026-05-04
+
+### Origem de Transações & Melhorias Mobile
+- **Campo `source` nas transações**: distingue entradas feitas manualmente no app (`"manual"`) das enviadas via Telegram/n8n (`"telegram"`); campo persistido no Redis e visível na lista de transações como badge "Telegram"
+- **Badge de origem**: na coluna de metadados da tabela de transações, um badge azul com ícone de avião de papel identifica transações do Telegram
+- **Logout mobile**: botão "Sair" adicionado à barra de navegação inferior/superior do layout mobile real (`RealMobileLayout`) e do simulador desktop (`MobileFrame`) — POST para `/api/auth/logout` + redirect para `/login`
+- **Destino multi-usuário no n8n**: o payload da rota `POST /api/ingest/transactions` agora aceita os campos opcionais `user_email` ou `username` para direcionar a transação ao usuário correto; sem esses campos o comportamento padrão (usuário demo) é mantido; usuário não encontrado retorna `404 USER_NOT_FOUND`
+
+---
+
 ## v1.7.0 — 2026-05-04
 
 ### Shared Household Finances — "Casa Compartilhada"

@@ -70,6 +70,7 @@ export function TransactionModal({ open, onClose, initial }: Props) {
       recurringPeriod:  isRecurring ? recurringPeriod : undefined,
       recurringCount:   isRecurring && countNum ? countNum : undefined,
       isShared: hasHousehold ? isShared : undefined,
+      source: "manual" as const,
     };
 
     if (initial) {

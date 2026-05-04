@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStore, setStore, DEFAULT_CATEGORIES } from "@/lib/kv-store";
 import type { Category, Account, Transaction, StoreData } from "@/lib/kv-store";
+import { findByEmail, findByUsername, PRIMARY_USER } from "@/lib/users";
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -8,8 +9,8 @@ const API_KEY           = process.env.API_KEY ?? "fa-ingest-dev-key-change-in-pr
 const RATE_LIMIT_MAX    = 60;
 const RATE_LIMIT_WINDOW = 60_000;
 
-// The single demo user — ingest writes to this user's store
-const PRIMARY_USER_ID   = "00000000-0000-0000-0000-000000000002";
+// Fallback when no user identifier is provided in the payload
+const PRIMARY_USER_ID   = PRIMARY_USER.id;
 
 // ── Rate limiter ──────────────────────────────────────────────────────────────
 
@@ -121,7 +122,31 @@ export async function POST(request: Request) {
     return err(400, "BAD_REQUEST", "Body must be a JSON object or a non-empty array of objects");
   }
 
-  // 5 ── Validate all items before writing anything
+  // 5 ── Resolve target user from payload (user_email / username field on first item)
+  let targetUserId = PRIMARY_USER_ID;
+  const firstItem  = items[0];
+  const payloadEmail    = optString(firstItem.user_email);
+  const payloadUsername = optString(firstItem.username);
+
+  if (payloadEmail) {
+    const found = await findByEmail(payloadEmail);
+    if (!found) {
+      log("user_not_found", { ip, user_email: payloadEmail });
+      return err(404, "USER_NOT_FOUND", `No user found with email "${payloadEmail}"`);
+    }
+    targetUserId = found.id;
+    log("user_resolved", { ip, user_email: payloadEmail, userId: targetUserId });
+  } else if (payloadUsername) {
+    const found = await findByUsername(payloadUsername);
+    if (!found) {
+      log("user_not_found", { ip, username: payloadUsername });
+      return err(404, "USER_NOT_FOUND", `No user found with username "${payloadUsername}"`);
+    }
+    targetUserId = found.id;
+    log("user_resolved", { ip, username: payloadUsername, userId: targetUserId });
+  }
+
+  // 6 ── Validate all items before writing anything
   for (let i = 0; i < items.length; i++) {
     const t = items[i];
     if (!isPositiveFinite(t.amount)) {
@@ -134,8 +159,8 @@ export async function POST(request: Request) {
     }
   }
 
-  // 6 ── Load store, apply all items, persist once
-  const store: StoreData = await getStore(PRIMARY_USER_ID);
+  // 7 ── Load store, apply all items, persist once
+  const store: StoreData = await getStore(targetUserId);
   let queued = 0;
 
   for (const t of items) {
@@ -159,6 +184,7 @@ export async function POST(request: Request) {
       category,
       account,
       date:        (t.date as string).slice(0, 10),
+      source:      "telegram",
     };
 
     store.transactions.unshift(transaction);
@@ -170,7 +196,7 @@ export async function POST(request: Request) {
     });
   }
 
-  await setStore(PRIMARY_USER_ID, store);
+  await setStore(targetUserId, store);
 
   return NextResponse.json({ ok: true, queued }, { status: 202 });
 }

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Search, Plus, Upload, Sparkles, ChevronDown, Trash2, RepeatIcon } from "lucide-react";
+import { Search, Plus, Upload, Sparkles, ChevronDown, Trash2, RepeatIcon, Send } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -150,6 +150,11 @@ export default function TransactionsPage() {
                       {tx.isRecurring && (
                         <Badge variant="info" className="text-[10px] gap-0.5 py-0 px-1.5">
                           <RepeatIcon size={9} /> {tx.recurringPeriod === "yearly" ? "Anual" : "Mensal"}
+                        </Badge>
+                      )}
+                      {tx.source === "telegram" && (
+                        <Badge variant="info" className="text-[10px] gap-0.5 py-0 px-1.5 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border-0">
+                          <Send size={9} /> Telegram
                         </Badge>
                       )}
                       {tx.aiCategory && (
