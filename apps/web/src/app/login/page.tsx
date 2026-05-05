@@ -404,24 +404,6 @@ function LoginPageInner() {
               </div>
             )}
 
-            {/* Demo hint — only on login tab */}
-            {tab === "login" && (
-              <div className="mt-6 p-3.5 rounded-xl bg-slate-50 border border-slate-100">
-                <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">
-                  Acesso demonstração
-                </p>
-                <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-                  <span>
-                    Usuário{" "}
-                    <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-700">user</code>
-                  </span>
-                  <span>
-                    Senha{" "}
-                    <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-700">pass</code>
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

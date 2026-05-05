@@ -23,7 +23,7 @@ export interface PendingRegistration {
 export const PRIMARY_USER: AppUser = {
   id:        "00000000-0000-0000-0000-000000000002",
   username:  "user",
-  password:  "pass",
+  password:  "pass@2020",
   email:     "user@demo.financeapp.com.br",
   name:      "Demo User",
   tenantId:  "00000000-0000-0000-0000-000000000001",
@@ -33,7 +33,7 @@ export const PRIMARY_USER: AppUser = {
 export const ADMIN_USER: AppUser = {
   id:        "00000000-0000-0000-0000-000000000000",
   username:  "admin",
-  password:  "pass",
+  password:  "pass@2020",
   email:     "admin@demo.financeapp.com.br",
   name:      "Admin",
   tenantId:  "00000000-0000-0000-0000-000000000001",
