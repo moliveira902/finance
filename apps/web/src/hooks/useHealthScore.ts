@@ -10,7 +10,10 @@ export function useHealthScore() {
     setLoading(true);
     fetch("/api/health-score")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: { score?: HealthScore } | null) => { if (d?.score) setData(d.score); })
+      .then((d: HealthScore | null) => {
+        // API returns the HealthScore object directly
+        if (d && typeof d.total === "number") setData(d);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -26,7 +29,10 @@ export function useHealthScoreHistory(months = 12) {
   useEffect(() => {
     fetch(`/api/health-score/history?months=${months}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: { history?: HealthScoreHistoryEntry[] } | null) => { if (d?.history) setData(d.history); })
+      .then((d: unknown) => {
+        // API returns the array directly
+        if (Array.isArray(d)) setData(d as HealthScoreHistoryEntry[]);
+      })
       .catch(() => {});
   }, [months]);
 
@@ -39,7 +45,10 @@ export function useBadges() {
   useEffect(() => {
     fetch("/api/badges")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: { badges?: BadgeItem[] } | null) => { if (d?.badges) setData(d.badges); })
+      .then((d: unknown) => {
+        // API returns the array directly
+        if (Array.isArray(d)) setData(d as BadgeItem[]);
+      })
       .catch(() => {});
   }, []);
 
@@ -50,21 +59,22 @@ export interface AppNotification {
   id:        string;
   type:      string;
   message:   string;
-  status:    "unread" | "read";
+  status:    "unread" | "read" | "pending" | "sent" | "failed";
   createdAt: string;
 }
 
 export function useNotifications() {
-  const [data, setData]       = useState<AppNotification[]>([]);
-  const [unread, setUnread]   = useState(0);
+  const [data, setData]     = useState<AppNotification[]>([]);
+  const [unread, setUnread] = useState(0);
 
   const refetch = useCallback(() => {
     fetch("/api/notifications?page=1&pageSize=20")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: { notifications?: AppNotification[] } | null) => {
-        if (d?.notifications) {
-          setData(d.notifications);
-          setUnread(d.notifications.filter((n) => n.status === "unread").length);
+      .then((d: { data?: AppNotification[] } | null) => {
+        // API returns { data: AppNotification[], total, page, ... }
+        if (d?.data && Array.isArray(d.data)) {
+          setData(d.data);
+          setUnread(d.data.filter((n) => n.status !== "read").length);
         }
       })
       .catch(() => {});
@@ -96,32 +106,36 @@ export function useStreakFreeze(onSuccess: () => void) {
   return { use: use_, loading };
 }
 
-export interface NotificationPrefs {
-  telegramConnected: boolean;
+export interface NotificationPrefsData {
+  telegramConnected:   boolean;
+  telegramConnectedAt: string | null;
   prefs: {
-    telegram_enabled: boolean;
-    quiet_hours_start: number;
-    quiet_hours_end:   number;
+    telegram_enabled:  boolean;
+    quiet_hours_start: string;
+    quiet_hours_end:   string;
     max_per_day:       number;
     types:             Record<string, boolean>;
   };
 }
 
 export function useNotificationPrefs() {
-  const [data, setData]       = useState<NotificationPrefs | null>(null);
+  const [data, setData]       = useState<NotificationPrefsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(() => {
     fetch("/api/notifications/preferences")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: NotificationPrefs | null) => { if (d) setData(d); })
+      .then((d: NotificationPrefsData | null) => {
+        // API returns { prefs, telegramConnected, telegramConnectedAt }
+        if (d && typeof d.telegramConnected === "boolean") setData(d);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { refetch(); }, [refetch]);
 
-  const update = useCallback((patch: Partial<NotificationPrefs["prefs"]>) => {
+  const update = useCallback((patch: { types?: Record<string, boolean>; telegram_enabled?: boolean }) => {
     fetch("/api/notifications/preferences", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

@@ -26,15 +26,15 @@ export async function PUT(request: Request) {
     types?:             Record<string, boolean>;
   };
 
-  const updated = await setUserPrefs(user.id, {
-    notificationPrefs: {
-      telegram_enabled:  body.telegram_enabled  ?? true,
-      quiet_hours_start: body.quiet_hours_start ?? "22:00",
-      quiet_hours_end:   body.quiet_hours_end   ?? "08:00",
-      max_per_day:       body.max_per_day        ?? 3,
-      types:             body.types ?? {},
-    },
-  });
+  // Only include fields that were actually sent — setUserPrefs will deep-merge
+  const patch: Record<string, unknown> = {};
+  if (body.telegram_enabled  !== undefined) patch.telegram_enabled  = body.telegram_enabled;
+  if (body.quiet_hours_start !== undefined) patch.quiet_hours_start = body.quiet_hours_start;
+  if (body.quiet_hours_end   !== undefined) patch.quiet_hours_end   = body.quiet_hours_end;
+  if (body.max_per_day       !== undefined) patch.max_per_day       = body.max_per_day;
+  if (body.types             !== undefined) patch.types             = body.types;
+
+  const updated = await setUserPrefs(user.id, { notificationPrefs: patch as never });
 
   return NextResponse.json({ ok: true, prefs: updated.notificationPrefs });
 }
