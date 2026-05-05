@@ -20,6 +20,7 @@ export async function PUT(request: Request) {
 
   const body = await request.json() as {
     telegram_enabled?:  boolean;
+    email_enabled?:     boolean;
     quiet_hours_start?: string;
     quiet_hours_end?:   string;
     max_per_day?:       number;
@@ -29,6 +30,7 @@ export async function PUT(request: Request) {
   // Only include fields that were actually sent — setUserPrefs will deep-merge
   const patch: Record<string, unknown> = {};
   if (body.telegram_enabled  !== undefined) patch.telegram_enabled  = body.telegram_enabled;
+  if (body.email_enabled     !== undefined) patch.email_enabled     = body.email_enabled;
   if (body.quiet_hours_start !== undefined) patch.quiet_hours_start = body.quiet_hours_start;
   if (body.quiet_hours_end   !== undefined) patch.quiet_hours_end   = body.quiet_hours_end;
   if (body.max_per_day       !== undefined) patch.max_per_day       = body.max_per_day;
