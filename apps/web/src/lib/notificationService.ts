@@ -1,7 +1,7 @@
-import { kvGet, kvSet, isKvConfigured } from "@/lib/kv-store";
+import { kvGet, kvSet, isKvConfigured, getStore } from "@/lib/kv-store";
 import { getUserPrefs } from "@/lib/userPrefs";
 import { getHousehold } from "@/lib/householdService";
-import { getStore } from "@/lib/kv-store";
+import { sendNotificationEmail } from "@/lib/emailService";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -12,7 +12,7 @@ export interface AppNotification {
   message:          string;
   metadata:         Record<string, unknown>;
   status:           "pending" | "sent" | "failed" | "read";
-  channel:          "telegram" | "in_app";
+  channel:          "telegram" | "email" | "multi" | "in_app";
   sentAt?:          string;
   readAt?:          string;
   createdAt:        string;
@@ -72,21 +72,32 @@ export async function dispatch(
 ): Promise<void> {
   if (!isKvConfigured()) return;
 
-  const [prefs, stored] = await Promise.all([
+  const [prefs, stored, store] = await Promise.all([
     getUserPrefs(userId),
     kvGet<AppNotification[]>(notifKey(userId)),
+    getStore(userId),
   ]);
   const notifications = stored ?? [];
 
-  // Check user preference
+  // Check per-type preference
   if (prefs.notificationPrefs.types[type] === false) return;
 
-  const hasTelegram   = !!prefs.telegramChatId;
-  const inQuiet       = isInQuietHours(
+  const hasTelegram = !!prefs.telegramChatId;
+  const hasEmail    = prefs.notificationPrefs.email_enabled && !!store.profile.email;
+  const inQuiet     = isInQuietHours(
     prefs.notificationPrefs.quiet_hours_start,
     prefs.notificationPrefs.quiet_hours_end,
   );
   const overCap = countSentToday(notifications) >= prefs.notificationPrefs.max_per_day;
+
+  // Determine primary channel label for the record
+  const canSendTelegram = hasTelegram && prefs.notificationPrefs.telegram_enabled;
+  const canSendEmail    = hasEmail;
+  const primaryChannel: AppNotification["channel"] =
+    canSendTelegram && canSendEmail ? "multi"
+    : canSendTelegram               ? "telegram"
+    : canSendEmail                  ? "email"
+    : "in_app";
 
   const record: AppNotification = {
     id:               uid(),
@@ -94,16 +105,22 @@ export async function dispatch(
     notificationType: type,
     message,
     metadata,
-    status:  "pending",
-    channel: hasTelegram && prefs.notificationPrefs.telegram_enabled ? "telegram" : "in_app",
+    status:    "pending",
+    channel:   primaryChannel,
     createdAt: new Date().toISOString(),
   };
 
-  // Persist record (always)
+  // Persist record first (always visible in-app)
   const updated = [record, ...notifications].slice(0, MAX_NOTIFICATIONS);
+  await kvSet(notifKey(userId), updated);
 
-  // Attempt n8n delivery if telegram is connected and conditions allow
-  if (hasTelegram && prefs.notificationPrefs.telegram_enabled && !inQuiet && !overCap) {
+  if (inQuiet || overCap) return; // respect anti-spam — record is saved, just not delivered
+
+  let telegramOk = false;
+  let emailOk    = false;
+
+  // Telegram via n8n
+  if (canSendTelegram) {
     try {
       await sendToN8n({
         notification_type:      type,
@@ -114,14 +131,33 @@ export async function dispatch(
         household_id:           householdId ?? null,
         metadata,
       });
-      record.status = "sent";
-      record.sentAt = new Date().toISOString();
+      telegramOk = true;
     } catch {
-      record.status = "failed";
+      // fall through — try email next
     }
   }
 
-  await kvSet(notifKey(userId), updated);
+  // Email via Resend
+  if (canSendEmail) {
+    try {
+      await sendNotificationEmail(store.profile.email, type, message);
+      emailOk = true;
+    } catch {
+      // fall through
+    }
+  }
+
+  // Update record status
+  if (telegramOk || emailOk) {
+    record.status = "sent";
+    record.sentAt = new Date().toISOString();
+  } else if (canSendTelegram || canSendEmail) {
+    record.status = "failed";
+  }
+
+  // Re-persist with updated status
+  const finalList = [record, ...notifications].slice(0, MAX_NOTIFICATIONS);
+  await kvSet(notifKey(userId), finalList);
 }
 
 // ── Household helper ──────────────────────────────────────────────────────────

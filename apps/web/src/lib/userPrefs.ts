@@ -25,6 +25,7 @@ export const DEFAULT_NOTIFICATION_TYPES: Record<string, boolean> = {
 
 export interface NotificationPrefs {
   telegram_enabled:   boolean;
+  email_enabled:      boolean;
   quiet_hours_start:  string;
   quiet_hours_end:    string;
   max_per_day:        number;
@@ -41,6 +42,7 @@ export interface UserPrefs {
 const DEFAULT_PREFS: UserPrefs = {
   notificationPrefs: {
     telegram_enabled:  true,
+    email_enabled:     false,
     quiet_hours_start: "22:00",
     quiet_hours_end:   "08:00",
     max_per_day:       3,

@@ -613,6 +613,35 @@ export default function SettingsPage() {
           {/* ── Notifications ── */}
           {tab === "notifications" && (
             <>
+              {/* Email */}
+              <Card>
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Email</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                  Receba as mesmas notificações no email da sua conta.
+                  {profile.email && (
+                    <span className="block mt-1 font-medium text-slate-700 dark:text-slate-300">{profile.email}</span>
+                  )}
+                </p>
+                {notifPrefs.loading ? (
+                  <p className="text-sm text-slate-400">Carregando...</p>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-700 dark:text-slate-300">
+                      {notifPrefs.data?.prefs?.email_enabled ? "Ativo" : "Inativo"}
+                    </span>
+                    <Toggle
+                      enabled={notifPrefs.data?.prefs?.email_enabled ?? false}
+                      onChange={(v) => notifPrefs.update({ email_enabled: v })}
+                    />
+                  </div>
+                )}
+                {!profile.email && (
+                  <p className="text-xs text-amber-500 mt-2">
+                    Adicione um email no perfil para ativar esta opção.
+                  </p>
+                )}
+              </Card>
+
               {/* Telegram Connect */}
               <Card>
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Telegram</h2>

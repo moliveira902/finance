@@ -111,6 +111,7 @@ export interface NotificationPrefsData {
   telegramConnectedAt: string | null;
   prefs: {
     telegram_enabled:  boolean;
+    email_enabled:     boolean;
     quiet_hours_start: string;
     quiet_hours_end:   string;
     max_per_day:       number;
@@ -135,7 +136,7 @@ export function useNotificationPrefs() {
 
   useEffect(() => { refetch(); }, [refetch]);
 
-  const update = useCallback((patch: { types?: Record<string, boolean>; telegram_enabled?: boolean }) => {
+  const update = useCallback((patch: { types?: Record<string, boolean>; telegram_enabled?: boolean; email_enabled?: boolean }) => {
     fetch("/api/notifications/preferences", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
