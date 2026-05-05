@@ -107,8 +107,10 @@ export function useStreakFreeze(onSuccess: () => void) {
 }
 
 export interface NotificationPrefsData {
-  telegramConnected:   boolean;
-  telegramConnectedAt: string | null;
+  telegramConnected:    boolean;
+  telegramConnectedAt:  string | null;
+  telegramChatId:       string;
+  telegramBotTokenSet:  boolean;
   prefs: {
     telegram_enabled:  boolean;
     email_enabled:     boolean;

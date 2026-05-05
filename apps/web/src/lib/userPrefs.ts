@@ -34,6 +34,7 @@ export interface NotificationPrefs {
 
 export interface UserPrefs {
   telegramChatId?:        string;
+  telegramBotToken?:      string;
   telegramConnectedAt?:   string;
   streakFreezeUsedMonth?: string; // YYYY-MM
   notificationPrefs:      NotificationPrefs;

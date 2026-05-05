@@ -46,19 +46,19 @@ function countSentToday(notifications: AppNotification[]): number {
   ).length;
 }
 
-// ── n8n dispatch ──────────────────────────────────────────────────────────────
+// ── Telegram direct dispatch ──────────────────────────────────────────────────
 
-async function sendToN8n(payload: Record<string, unknown>): Promise<void> {
-  const url = process.env.N8N_NOTIFICATION_WEBHOOK_URL;
-  const key = process.env.N8N_NOTIFICATION_WEBHOOK_KEY;
-  if (!url || !key) return; // n8n not configured — in-app only
-
-  await fetch(url, {
+export async function sendTelegramMessage(botToken: string, chatId: string, text: string): Promise<void> {
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method:  "POST",
-    headers: { "Content-Type": "application/json", "x-api-key": key },
-    body:    JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" }),
     signal:  AbortSignal.timeout(10_000),
   });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Telegram error ${res.status}: ${body}`);
+  }
 }
 
 // ── Main dispatch ─────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ export async function dispatch(
   // Check per-type preference
   if (prefs.notificationPrefs.types[type] === false) return;
 
-  const hasTelegram = !!prefs.telegramChatId;
+  const hasTelegram = !!prefs.telegramChatId && !!prefs.telegramBotToken;
   const hasEmail    = prefs.notificationPrefs.email_enabled && !!store.profile.email;
   const inQuiet     = isInQuietHours(
     prefs.notificationPrefs.quiet_hours_start,
@@ -119,18 +119,10 @@ export async function dispatch(
   let telegramOk = false;
   let emailOk    = false;
 
-  // Telegram via n8n
+  // Telegram — direct Bot API
   if (canSendTelegram) {
     try {
-      await sendToN8n({
-        notification_type:      type,
-        user_id:                userId,
-        notification_record_id: record.id,
-        telegram_chat_id:       prefs.telegramChatId,
-        message,
-        household_id:           householdId ?? null,
-        metadata,
-      });
+      await sendTelegramMessage(prefs.telegramBotToken!, prefs.telegramChatId!, message);
       telegramOk = true;
     } catch {
       // fall through — try email next

@@ -129,18 +129,52 @@ export default function SettingsPage() {
   const [weeklyDigest,   setWeeklyDigest]   = useState(false);
   const [monthlyReport,  setMonthlyReport]  = useState(true);
 
-  // Notification prefs (persisted) + Telegram connect
+  // Notification prefs (persisted)
   const notifPrefs = useNotificationPrefs();
-  const [telegramLink, setTelegramLink] = useState<string | null>(null);
-  const [telegramLinkLoading, setTelegramLinkLoading] = useState(false);
 
-  function loadTelegramLink() {
-    setTelegramLinkLoading(true);
-    fetch("/api/users/telegram-link")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { deepLink?: string } | null) => { if (d?.deepLink) setTelegramLink(d.deepLink); })
-      .catch(() => {})
-      .finally(() => setTelegramLinkLoading(false));
+  // Telegram credentials form
+  const [tgBotToken,    setTgBotToken]    = useState("");
+  const [tgChatId,      setTgChatId]      = useState("");
+  const [tgSaving,      setTgSaving]      = useState(false);
+  const [tgSaved,       setTgSaved]       = useState(false);
+  const [tgTesting,     setTgTesting]     = useState(false);
+  const [tgTestResult,  setTgTestResult]  = useState<{ ok: boolean; error?: string } | null>(null);
+
+  // Pre-fill chat ID from loaded prefs (bot token is never returned from server)
+  useEffect(() => {
+    if (notifPrefs.data?.telegramChatId) setTgChatId(notifPrefs.data.telegramChatId);
+  }, [notifPrefs.data?.telegramChatId]);
+
+  async function handleSaveTelegram() {
+    if (!tgBotToken && !notifPrefs.data?.telegramBotTokenSet) return;
+    setTgSaving(true);
+    const body: Record<string, string> = { telegramChatId: tgChatId.trim() };
+    if (tgBotToken.trim()) body.telegramBotToken = tgBotToken.trim();
+    await fetch("/api/notifications/preferences", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).catch(() => {});
+    await notifPrefs.refetch();
+    setTgBotToken("");
+    setTgSaving(false);
+    setTgSaved(true);
+    setTimeout(() => setTgSaved(false), 2500);
+  }
+
+  async function handleTestTelegram() {
+    const token = tgBotToken.trim() || (notifPrefs.data?.telegramBotTokenSet ? "__stored__" : "");
+    if (!token || !tgChatId.trim()) return;
+    setTgTesting(true);
+    setTgTestResult(null);
+    const res = await fetch("/api/notifications/telegram-test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ botToken: tgBotToken.trim() || undefined, chatId: tgChatId.trim() }),
+    }).catch(() => null);
+    const data = res ? await res.json().catch(() => null) : null;
+    setTgTestResult(data ?? { ok: false, error: "Erro de rede" });
+    setTgTesting(false);
   }
   const [aiEnabled,      setAiEnabled]      = useState(true);
   const [autoSuggest,    setAutoSuggest]    = useState(true);
@@ -659,40 +693,73 @@ export default function SettingsPage() {
                 )}
               </Card>
 
-              {/* Telegram Connect */}
+              {/* Telegram */}
               <Card>
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Telegram</h2>
+                <div className="flex items-center justify-between mb-1">
+                  <h2 className="text-base font-semibold text-slate-900 dark:text-white">Telegram</h2>
+                  {notifPrefs.data?.telegramConnected && (
+                    <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      <Check size={12} /> Configurado
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                  Conecte seu Telegram para receber alertas de orçamento, pontuação e resumos da Casa.
+                  Informe o token do bot e o seu Chat ID para receber alertas diretamente no Telegram.
                 </p>
                 {notifPrefs.loading ? (
                   <p className="text-sm text-slate-400">Carregando...</p>
-                ) : notifPrefs.data?.telegramConnected ? (
-                  <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
-                    <Check size={15} />
-                    Telegram conectado — você receberá notificações via bot.
-                  </div>
                 ) : (
                   <div className="space-y-3">
-                    {!telegramLink ? (
-                      <Button size="sm" onClick={loadTelegramLink} disabled={telegramLinkLoading}>
-                        {telegramLinkLoading ? "Gerando link…" : "Conectar Telegram"}
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Bot Token
+                      </label>
+                      <input
+                        type="password"
+                        value={tgBotToken}
+                        onChange={(e) => setTgBotToken(e.target.value)}
+                        placeholder={notifPrefs.data?.telegramBotTokenSet ? "••••••••••••  (já configurado)" : "1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ"}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors font-mono"
+                      />
+                      <p className="text-xs text-slate-400">Obtenha o token com o <span className="font-medium">@BotFather</span> no Telegram.</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Chat ID
+                      </label>
+                      <input
+                        value={tgChatId}
+                        onChange={(e) => setTgChatId(e.target.value)}
+                        placeholder="Ex: 123456789 ou @seu_username"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors font-mono"
+                      />
+                      <p className="text-xs text-slate-400">Envie uma mensagem ao bot e use <span className="font-medium">@userinfobot</span> para descobrir seu ID.</p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={handleSaveTelegram}
+                        disabled={tgSaving || (!tgBotToken.trim() && !notifPrefs.data?.telegramBotTokenSet) || !tgChatId.trim()}
+                      >
+                        {tgSaving ? "Salvando…" : "Salvar"}
                       </Button>
-                    ) : (
-                      <div className="space-y-2">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Clique no link abaixo para abrir o bot e concluir a conexão:
-                        </p>
-                        <a
-                          href={telegramLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm text-sky-500 hover:text-sky-600 underline transition-colors"
-                        >
-                          Abrir bot no Telegram →
-                        </a>
-                        <p className="text-xs text-slate-400">O link expira em 1 hora.</p>
-                      </div>
+                      <Button
+                        size="sm"
+                        onClick={handleTestTelegram}
+                        disabled={tgTesting || (!tgBotToken.trim() && !notifPrefs.data?.telegramBotTokenSet) || !tgChatId.trim()}
+                      >
+                        {tgTesting ? "Enviando…" : "Testar conexão"}
+                      </Button>
+                      {tgSaved && (
+                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                          <Check size={12} /> Salvo
+                        </span>
+                      )}
+                    </div>
+                    {tgTestResult && (
+                      <p className={cn("text-xs font-medium mt-1", tgTestResult.ok ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400")}>
+                        {tgTestResult.ok ? "✓ Mensagem enviada com sucesso!" : `✗ ${tgTestResult.error}`}
+                      </p>
                     )}
                   </div>
                 )}
