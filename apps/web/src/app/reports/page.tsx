@@ -50,11 +50,13 @@ function buildMonthlyTrend(txs: TxLike[]) {
   });
 }
 
-function buildCategoryBreakdown(txs: TxLike[], year: number, monthIndex: number) {
-  const pts = txs.filter((t) => {
-    const td = new Date(t.date);
-    return td.getFullYear() === year && td.getMonth() === monthIndex && t.type === "expense";
-  });
+function buildCategoryBreakdown(txs: TxLike[], year?: number, monthIndex?: number) {
+  const pts = (year !== undefined && monthIndex !== undefined)
+    ? txs.filter((t) => {
+        const td = new Date(t.date);
+        return td.getFullYear() === year && td.getMonth() === monthIndex && t.type === "expense";
+      })
+    : txs.filter((t) => t.type === "expense");
   const map = new Map<string, { name: string; value: number; color: string }>();
   pts.forEach((t) => {
     const key  = t.category.name; // group by name so both users' categories merge
@@ -66,14 +68,16 @@ function buildCategoryBreakdown(txs: TxLike[], year: number, monthIndex: number)
 
 function buildCombinedCategoryBreakdown(
   txs: CombinedTransaction[],
-  year: number,
-  monthIndex: number,
+  year: number | undefined,
+  monthIndex: number | undefined,
   ownerName: string,
 ) {
-  const pts = txs.filter((t) => {
-    const td = new Date(t.date);
-    return td.getFullYear() === year && td.getMonth() === monthIndex && t.type === "expense";
-  });
+  const pts = (year !== undefined && monthIndex !== undefined)
+    ? txs.filter((t) => {
+        const td = new Date(t.date);
+        return td.getFullYear() === year && td.getMonth() === monthIndex && t.type === "expense";
+      })
+    : txs.filter((t) => t.type === "expense");
   const map = new Map<string, {
     name: string; color: string; total: number;
     ownerAmount: number; memberAmount: number;
@@ -141,23 +145,44 @@ export default function ReportsPage() {
   // Active transactions for this view
   const activeTxns: TxLike[] = viewMode === "household" ? combinedTxns : personalTxns;
 
-  const trend    = buildMonthlyTrend(activeTxns);
-  const selected = trend[selectedIdx];
-  const prev     = trend[selectedIdx - 1];
+  const trend     = buildMonthlyTrend(activeTxns);
+  const isAllTime = selectedIdx === -1;
+  const selected  = isAllTime ? null : trend[selectedIdx];
+  const prev      = !isAllTime && selectedIdx > 0 ? trend[selectedIdx - 1] : null;
 
-  const catBreakdown = buildCategoryBreakdown(activeTxns, selected.year, selected.monthIndex);
-  const catTotal     = catBreakdown.reduce((s, c) => s + c.value, 0);
+  const kpiIncome   = isAllTime
+    ? activeTxns.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0)
+    : selected!.income;
+  const kpiExpenses = isAllTime
+    ? Math.abs(activeTxns.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0))
+    : selected!.expenses;
+  const savings = kpiIncome - kpiExpenses;
+
+  const catBreakdown = buildCategoryBreakdown(
+    activeTxns,
+    isAllTime ? undefined : selected!.year,
+    isAllTime ? undefined : selected!.monthIndex,
+  );
+  const catTotal = catBreakdown.reduce((s, c) => s + c.value, 0);
 
   const combinedCatBreakdown = viewMode === "household" && household
     ? buildCombinedCategoryBreakdown(
-        combinedTxns, selected.year, selected.monthIndex,
+        combinedTxns,
+        isAllTime ? undefined : selected?.year,
+        isAllTime ? undefined : selected?.monthIndex,
         household.ownerName,
       )
     : [];
 
-  const incDelta = prev && prev.income > 0   ? ((selected.income   - prev.income)   / prev.income)   * 100 : 0;
-  const expDelta = prev && prev.expenses > 0 ? ((selected.expenses - prev.expenses) / prev.expenses) * 100 : 0;
-  const savings  = selected.income - selected.expenses;
+  const incDelta = !isAllTime && prev && prev.income > 0
+    ? ((selected!.income - prev.income) / prev.income) * 100 : 0;
+  const expDelta = !isAllTime && prev && prev.expenses > 0
+    ? ((selected!.expenses - prev.expenses) / prev.expenses) * 100 : 0;
+
+  const periodLabel = isAllTime
+    ? "Todos os períodos"
+    : selected!.fullLabel.charAt(0).toUpperCase() + selected!.fullLabel.slice(1);
+  const monthLabel = isAllTime ? "Total" : selected!.month;
 
   const ownerColor  = "#0ea5e9"; // sky-500
   const memberColor = "#8b5cf6"; // violet-500
@@ -214,6 +239,7 @@ export default function ReportsPage() {
                 onChange={(e) => setSelectedIdx(Number(e.target.value))}
                 className="h-9 pl-3 pr-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200 focus:outline-none appearance-none cursor-pointer"
               >
+                <option value={-1}>Todos os períodos</option>
                 {trend.map((t, i) => (
                   <option key={i} value={i}>
                     {t.fullLabel.charAt(0).toUpperCase() + t.fullLabel.slice(1)}
@@ -250,12 +276,12 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 @sm:grid-cols-3 gap-4">
         <Card className="py-4">
           <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Receitas ({selected.month})
+            Receitas ({monthLabel})
           </p>
           <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
-            {formatBRL(selected.income)}
+            {formatBRL(kpiIncome)}
           </p>
-          {prev && prev.income > 0 && (
+          {!isAllTime && prev && prev.income > 0 && (
             <p className={cn("flex items-center gap-1 text-xs mt-2 font-medium",
               incDelta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400")}>
               {incDelta >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
@@ -265,12 +291,12 @@ export default function ReportsPage() {
         </Card>
         <Card className="py-4">
           <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Despesas ({selected.month})
+            Despesas ({monthLabel})
           </p>
           <p className="text-xl font-bold text-red-500 dark:text-red-400 mt-1 tabular-nums">
-            {formatBRL(selected.expenses)}
+            {formatBRL(kpiExpenses)}
           </p>
-          {prev && prev.expenses > 0 && (
+          {!isAllTime && prev && prev.expenses > 0 && (
             <p className={cn("flex items-center gap-1 text-xs mt-2 font-medium",
               expDelta <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400")}>
               {expDelta <= 0 ? <TrendingDown size={11} /> : <TrendingUp size={11} />}
@@ -280,15 +306,15 @@ export default function ReportsPage() {
         </Card>
         <Card className="py-4">
           <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Economia ({selected.month})
+            Economia ({monthLabel})
           </p>
           <p className={cn("text-xl font-bold mt-1 tabular-nums",
             savings >= 0 ? "text-slate-900 dark:text-white" : "text-red-500 dark:text-red-400")}>
             {formatBRL(savings)}
           </p>
-          {selected.income > 0 && (
+          {kpiIncome > 0 && (
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-              {Math.round((savings / selected.income) * 100)}% da receita {viewMode === "household" ? "combinada" : "mensal"}
+              {Math.round((savings / kpiIncome) * 100)}% da receita {viewMode === "household" ? "combinada" : isAllTime ? "total" : "mensal"}
             </p>
           )}
         </Card>
@@ -322,7 +348,7 @@ export default function ReportsPage() {
         {/* Pie chart */}
         <Card>
           <CardLabel className="mb-4">
-            Distribuição de Gastos — {selected.month}
+            Distribuição de Gastos — {monthLabel}
             {viewMode === "household" && (
               <span className="ml-2 text-[10px] font-normal text-sky-500">(casal)</span>
             )}
@@ -350,7 +376,7 @@ export default function ReportsPage() {
       {viewMode === "personal" && (
         <Card>
           <CardLabel className="mb-5">
-            Detalhamento por Categoria — {selected.fullLabel.charAt(0).toUpperCase() + selected.fullLabel.slice(1)}
+            Detalhamento por Categoria — {periodLabel}
           </CardLabel>
           {catBreakdown.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-8">Sem despesas neste período.</p>
@@ -385,7 +411,7 @@ export default function ReportsPage() {
       {viewMode === "household" && household && (
         <Card>
           <CardLabel className="mb-5 flex items-center gap-2">
-            Detalhamento por Categoria — {selected.fullLabel.charAt(0).toUpperCase() + selected.fullLabel.slice(1)}
+            Detalhamento por Categoria — {periodLabel}
             <span className="text-[10px] font-normal text-sky-500">(casal)</span>
           </CardLabel>
           {combinedCatBreakdown.length === 0 ? (
@@ -454,14 +480,16 @@ export default function ReportsPage() {
       {viewMode === "household" && household && (
         <Card>
           <CardLabel className="mb-4">
-            Todas as transações — {selected.fullLabel.charAt(0).toUpperCase() + selected.fullLabel.slice(1)}
+            Todas as transações — {periodLabel}
             <span className="ml-2 text-[10px] font-normal text-sky-500">(casal)</span>
           </CardLabel>
           {(() => {
-            const monthTxns = combinedTxns.filter((t) => {
-              const td = new Date(t.date);
-              return td.getFullYear() === selected.year && td.getMonth() === selected.monthIndex;
-            });
+            const monthTxns = isAllTime
+              ? [...combinedTxns].sort((a, b) => b.date.localeCompare(a.date))
+              : combinedTxns.filter((t) => {
+                  const td = new Date(t.date);
+                  return td.getFullYear() === selected!.year && td.getMonth() === selected!.monthIndex;
+                });
             if (monthTxns.length === 0) {
               return <p className="text-sm text-slate-400 text-center py-6">Sem transações neste período.</p>;
             }

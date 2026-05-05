@@ -125,7 +125,7 @@ function monthlyRecurringNet(txs: Transaction[]): number {
 }
 
 export default function DashboardPage() {
-  const { transactions, accounts } = useFinanceStore();
+  const { transactions, accounts, appSettings } = useFinanceStore();
 
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
@@ -158,8 +158,8 @@ export default function DashboardPage() {
         <KpiCard label="Saldo Livre"         value={formatBRL(income - expenses)} sub="Disponível para investir" positive={income - expenses > 0} />
       </div>
 
-      {/* Health Score widget */}
-      <ScoreWidget />
+      {/* Health Score widget — shown only when feature is enabled */}
+      {appSettings?.healthScoreEnabled !== false && <ScoreWidget />}
 
       {/* Charts row */}
       <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-4">

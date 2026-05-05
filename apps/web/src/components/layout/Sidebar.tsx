@@ -27,20 +27,21 @@ function shortName(name: string): string {
   return `${parts[0]} ${parts[parts.length - 1][0]}.`;
 }
 
-const NAV = [
-  { label: "Dashboard",        href: "/dashboard",    icon: LayoutDashboard },
-  { label: "Transações",       href: "/transactions", icon: ArrowLeftRight  },
-  { label: "Recorrentes",      href: "/recorrentes",  icon: RepeatIcon      },
-  { label: "Relatórios",       href: "/reports",      icon: BarChart2       },
-  { label: "Saúde financeira", href: "/score",        icon: Activity        },
-  { label: "Meu Consultor",    href: "/coach",        icon: Bot             },
-  { label: "Configurações",    href: "/settings",     icon: Settings        },
+const BASE_NAV = [
+  { label: "Dashboard",     href: "/dashboard",    icon: LayoutDashboard },
+  { label: "Transações",    href: "/transactions", icon: ArrowLeftRight  },
+  { label: "Recorrentes",   href: "/recorrentes",  icon: RepeatIcon      },
+  { label: "Relatórios",    href: "/reports",      icon: BarChart2       },
+  { label: "Meu Consultor", href: "/coach",        icon: Bot             },
+  { label: "Configurações", href: "/settings",     icon: Settings        },
 ];
+
+const SCORE_NAV = { label: "Saúde financeira", href: "/score", icon: Activity };
 
 export function Sidebar() {
   const pathname    = usePathname();
   const router      = useRouter();
-  const { profile } = useFinanceStore();
+  const { profile, appSettings } = useFinanceStore();
   const currentUser = useCurrentUser();
   const initials    = nameInitials(profile.name);
   const displayName = shortName(profile.name);
@@ -74,7 +75,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-        {NAV.map(({ label, href, icon: Icon }) => {
+        {[...BASE_NAV.slice(0, 4), ...(appSettings?.healthScoreEnabled !== false ? [SCORE_NAV] : []), ...BASE_NAV.slice(4)].map(({ label, href, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           return (
             <Link

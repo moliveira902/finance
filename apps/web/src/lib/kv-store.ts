@@ -23,12 +23,17 @@ export type Transaction = {
   isShared?: boolean; createdByMemberId?: string;
   source?: "telegram" | "manual";
 };
+export interface AppSettings {
+  healthScoreEnabled: boolean;
+}
+
 export interface StoreData {
   transactions: Transaction[];
   accounts:     Account[];
   categories:   Category[];
   profile:      { name: string; email: string };
   members:      unknown[];
+  appSettings?: AppSettings;
 }
 
 export const DEFAULT_CATEGORIES: Category[] = [

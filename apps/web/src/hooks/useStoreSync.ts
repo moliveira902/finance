@@ -24,6 +24,7 @@ export function useStoreSync() {
             categories:   json.data.categories   ?? categories,
             profile:      json.data.profile       ?? { name: "", email: "" },
             members:      json.data.members       ?? [],
+            appSettings:  json.data.appSettings   ?? { healthScoreEnabled: true },
           });
         }
         loaded.current = true;
@@ -44,11 +45,11 @@ export function useStoreSync() {
 
       clearTimeout(timer.current);
       timer.current = setTimeout(() => {
-        const { transactions, accounts, categories, profile, members } = state;
+        const { transactions, accounts, categories, profile, members, appSettings } = state;
         fetch("/api/store", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transactions, accounts, categories, profile, members }),
+          body: JSON.stringify({ transactions, accounts, categories, profile, members, appSettings }),
         }).catch(() => {});
       }, DEBOUNCE_MS);
     });

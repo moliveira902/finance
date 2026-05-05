@@ -101,6 +101,7 @@ export default function SettingsPage() {
     accounts, categories, deleteAccount, deleteCategory,
     profile, updateProfile,
     members, addMember, removeMember,
+    appSettings, updateAppSettings,
   } = useFinanceStore();
 
   const [tab, setTab] = useState<Tab>("profile");
@@ -270,6 +271,7 @@ export default function SettingsPage() {
 
           {/* ── Profile ── */}
           {tab === "profile" && (
+            <>
             <Card>
               <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-6">Informações do Perfil</h2>
               <div className="flex items-center gap-4 pb-5 mb-5 border-b border-slate-100 dark:border-slate-700">
@@ -325,6 +327,21 @@ export default function SettingsPage() {
                 <Button size="sm" onClick={handleProfileSave}>Salvar Alterações</Button>
               </div>
             </Card>
+
+            {/* ── Funcionalidades ── */}
+            <Card>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Funcionalidades</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Ative ou desative módulos da aplicação conforme sua preferência.
+              </p>
+              <SettingRow
+                label="Saúde financeira"
+                description="Exibe o índice de saúde financeira, conquistas e histórico de pontuação no painel e na navegação."
+                enabled={appSettings?.healthScoreEnabled !== false}
+                onChange={(v) => updateAppSettings({ healthScoreEnabled: v })}
+              />
+            </Card>
+            </>
           )}
 
           {/* ── Members ── */}

@@ -9,6 +9,7 @@ import {
   type Member,
   type UserProfile,
 } from "@/lib/mock-data";
+import type { AppSettings } from "@/lib/kv-store";
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -25,6 +26,10 @@ interface FinanceStore {
   // Profile & members
   profile: UserProfile;
   members: Member[];
+
+  // App settings
+  appSettings: AppSettings;
+  updateAppSettings: (patch: Partial<AppSettings>) => void;
 
   // Transactions
   addTransaction: (t: Omit<Transaction, "id">) => void;
@@ -59,6 +64,10 @@ export const useFinanceStore = create<FinanceStore>()(
       categories: defaultCategories,
       profile: { name: "", email: "" },
       members: [],
+      appSettings: { healthScoreEnabled: true },
+
+      updateAppSettings: (patch) =>
+        set((s) => ({ appSettings: { ...s.appSettings, ...patch } })),
 
       addTransaction: (t) =>
         set((s) => {
