@@ -49,7 +49,10 @@ export async function PUT(request: Request) {
   if (!body) return NextResponse.json({ error: "BAD_REQUEST" }, { status: 400 });
   await setStore(user.id, body);
   if (isKvConfigured()) {
-    await kvDel(`coach:context:${user.id}`);
+    await Promise.all([
+      kvDel(`coach:context:${user.id}`),
+      kvDel(`health_score:${user.id}`),
+    ]);
   }
   return NextResponse.json({ ok: true });
 }

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Card, CardLabel, CardValue } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { ScoreWidget } from "@/components/dashboard/ScoreWidget";
 import { useFinanceStore } from "@/stores/financeStore";
 import { formatBRL, formatDate, type Transaction } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -156,6 +157,9 @@ export default function DashboardPage() {
         <KpiCard label="Despesas do mês"     value={formatBRL(expenses)}      sub="Total de saídas"           positive={expenses < income} />
         <KpiCard label="Saldo Livre"         value={formatBRL(income - expenses)} sub="Disponível para investir" positive={income - expenses > 0} />
       </div>
+
+      {/* Health Score widget */}
+      <ScoreWidget />
 
       {/* Charts row */}
       <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-4">

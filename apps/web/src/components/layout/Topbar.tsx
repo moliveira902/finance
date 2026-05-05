@@ -2,6 +2,7 @@
 import { Monitor, Smartphone, Sun, Moon } from "lucide-react";
 import { useAppContext, type Viewport } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "./NotificationBell";
 
 const VIEWPORTS: { id: Viewport; label: string; icon: React.ElementType }[] = [
   { id: "desktop", label: "Desktop",  icon: Monitor    },
@@ -33,6 +34,8 @@ export function Topbar() {
       </div>
 
       <div className="flex-1" />
+
+      <NotificationBell />
 
       {/* Dark / light toggle */}
       <button

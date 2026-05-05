@@ -14,6 +14,8 @@ const PUBLIC_PREFIXES = [
   "/api/auth/",
   "/api/coach/webhook",
   "/api/household/invite/",
+  "/api/notifications/telegram-connect",
+  "/api/cron/",
   "/household/invite/",
   "/test-ingest",
 ];
@@ -63,6 +65,6 @@ export async function middleware(request: NextRequest) {
 //   favicon.ico  — static asset
 export const config = {
   matcher: [
-    "/((?!api/ingest/|api/auth/|api/coach/webhook|api/household/invite/|household/invite/|test-ingest|_next/static|_next/image|favicon\\.ico).*)",
+    "/((?!api/ingest/|api/auth/|api/coach/webhook|api/household/invite/|api/notifications/telegram-connect|api/cron/|household/invite/|test-ingest|_next/static|_next/image|favicon\\.ico).*)",
   ],
 };

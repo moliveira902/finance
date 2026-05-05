@@ -14,6 +14,7 @@ import { formatBRL } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { Account, Category, Member } from "@/lib/mock-data";
 import type { Household } from "@/lib/household";
+import { useNotificationPrefs } from "@/hooks/useHealthScore";
 
 type Tab = "profile" | "members" | "accounts" | "categories" | "notifications" | "ai" | "integrations" | "data";
 
@@ -73,6 +74,28 @@ const ACCOUNT_LABELS: Record<string, string> = {
 };
 const SYSTEM_IDS = new Set(["1","2","3","4","5","6","7","8","9","10"]);
 
+const NOTIF_TYPE_LABELS: Record<string, string> = {
+  SCORE_WEEKLY_SUMMARY:        "Resumo semanal de pontuação",
+  SCORE_LEVEL_UP:              "Subida de nível",
+  STREAK_MILESTONE:            "Marco de sequência",
+  STREAK_BROKEN:               "Sequência interrompida",
+  BADGE_EARNED:                "Nova conquista",
+  BUDGET_ALERT_80:             "Orçamento 80% atingido",
+  BUDGET_ALERT_EXCEEDED:       "Orçamento estourado",
+  BUDGET_MONTHLY_REVIEW:       "Fechamento mensal de orçamentos",
+  MONTHLY_REPORT_READY:        "Relatório mensal pronto",
+  SAVINGS_POSITIVE:            "Economia positiva (dia 25)",
+  LOW_BALANCE_WARNING:         "Saldo baixo",
+  SUBSCRIPTION_DETECTED:       "Nova assinatura detectada",
+  SUBSCRIPTION_UNUSED:         "Assinatura não utilizada",
+  HOUSEHOLD_EXPENSE_SHARED:    "Gasto compartilhado na Casa",
+  HOUSEHOLD_BUDGET_ALERT:      "Orçamento da Casa atingido",
+  HOUSEHOLD_SETTLEMENT_DUE:    "Acerto mensal da Casa",
+  HOUSEHOLD_SETTLEMENT_CLOSED: "Mês fechado na Casa",
+  HOUSEHOLD_MONTHLY_SUMMARY:   "Resumo mensal da Casa",
+  COACH_WEEKLY_INSIGHT:        "Insight semanal do consultor",
+};
+
 export default function SettingsPage() {
   const {
     accounts, categories, deleteAccount, deleteCategory,
@@ -99,11 +122,25 @@ export default function SettingsPage() {
     setTimeout(() => setProfileSaved(false), 2500);
   }
 
-  // Notification toggles
+  // Notification toggles (legacy local)
   const [emailAlerts,    setEmailAlerts]    = useState(true);
   const [pushAlerts,     setPushAlerts]     = useState(true);
   const [weeklyDigest,   setWeeklyDigest]   = useState(false);
   const [monthlyReport,  setMonthlyReport]  = useState(true);
+
+  // Notification prefs (persisted) + Telegram connect
+  const notifPrefs = useNotificationPrefs();
+  const [telegramLink, setTelegramLink] = useState<string | null>(null);
+  const [telegramLinkLoading, setTelegramLinkLoading] = useState(false);
+
+  function loadTelegramLink() {
+    setTelegramLinkLoading(true);
+    fetch("/api/users/telegram-link")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { deepLink?: string } | null) => { if (d?.deepLink) setTelegramLink(d.deepLink); })
+      .catch(() => {})
+      .finally(() => setTelegramLinkLoading(false));
+  }
   const [aiEnabled,      setAiEnabled]      = useState(true);
   const [autoSuggest,    setAutoSuggest]    = useState(true);
   const [learnOverrides, setLearnOverrides] = useState(true);
@@ -575,22 +612,83 @@ export default function SettingsPage() {
 
           {/* ── Notifications ── */}
           {tab === "notifications" && (
-            <Card>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Preferências de Notificação</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Escolha como e quando deseja ser notificado.</p>
-              <SettingRow label="Alertas de gastos por email"
-                description="Receba emails quando suas despesas mensais ultrapassarem sua receita."
-                enabled={emailAlerts}   onChange={setEmailAlerts} />
-              <SettingRow label="Push notifications"
-                description="Alertas instantâneos no dispositivo para eventos importantes."
-                enabled={pushAlerts}    onChange={setPushAlerts} />
-              <SettingRow label="Resumo semanal"
-                description="Email toda segunda-feira com o resumo da semana anterior."
-                enabled={weeklyDigest}  onChange={setWeeklyDigest} />
-              <SettingRow label="Relatório mensal"
-                description="Receba o relatório completo no início de cada mês."
-                enabled={monthlyReport} onChange={setMonthlyReport} />
-            </Card>
+            <>
+              {/* Telegram Connect */}
+              <Card>
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Telegram</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                  Conecte seu Telegram para receber alertas de orçamento, pontuação e resumos da Casa.
+                </p>
+                {notifPrefs.loading ? (
+                  <p className="text-sm text-slate-400">Carregando...</p>
+                ) : notifPrefs.data?.telegramConnected ? (
+                  <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+                    <Check size={15} />
+                    Telegram conectado — você receberá notificações via bot.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {!telegramLink ? (
+                      <Button size="sm" onClick={loadTelegramLink} disabled={telegramLinkLoading}>
+                        {telegramLinkLoading ? "Gerando link…" : "Conectar Telegram"}
+                      </Button>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                          Clique no link abaixo para abrir o bot e concluir a conexão:
+                        </p>
+                        <a
+                          href={telegramLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm text-sky-500 hover:text-sky-600 underline transition-colors"
+                        >
+                          Abrir bot no Telegram →
+                        </a>
+                        <p className="text-xs text-slate-400">O link expira em 1 hora.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Card>
+
+              {/* Notification type toggles */}
+              {notifPrefs.data && (
+                <Card>
+                  <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Tipos de notificação</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                    Controle quais eventos geram notificações.
+                  </p>
+                  {Object.entries(notifPrefs.data.prefs.types).map(([type, enabled]) => (
+                    <SettingRow
+                      key={type}
+                      label={NOTIF_TYPE_LABELS[type] ?? type}
+                      description=""
+                      enabled={enabled}
+                      onChange={(v) => notifPrefs.update({ types: { [type]: v } })}
+                    />
+                  ))}
+                </Card>
+              )}
+
+              {/* Legacy local toggles */}
+              <Card>
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Preferências de Notificação</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Escolha como e quando deseja ser notificado.</p>
+                <SettingRow label="Alertas de gastos por email"
+                  description="Receba emails quando suas despesas mensais ultrapassarem sua receita."
+                  enabled={emailAlerts}   onChange={setEmailAlerts} />
+                <SettingRow label="Push notifications"
+                  description="Alertas instantâneos no dispositivo para eventos importantes."
+                  enabled={pushAlerts}    onChange={setPushAlerts} />
+                <SettingRow label="Resumo semanal"
+                  description="Email toda segunda-feira com o resumo da semana anterior."
+                  enabled={weeklyDigest}  onChange={setWeeklyDigest} />
+                <SettingRow label="Relatório mensal"
+                  description="Receba o relatório completo no início de cada mês."
+                  enabled={monthlyReport} onChange={setMonthlyReport} />
+              </Card>
+            </>
           )}
 
           {/* ── AI ── */}

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/sessionUser";
 import { getStore, setStore } from "@/lib/kv-store";
 import { getHousehold } from "@/lib/householdService";
+import { dispatchToHousehold } from "@/lib/notificationService";
+import { Templates } from "@/lib/notificationTemplates";
 
 export async function PATCH(
   request: Request,
@@ -21,8 +23,28 @@ export async function PATCH(
     return NextResponse.json({ error: "Transaction not found." }, { status: 404 });
   }
 
-  store.transactions[txIndex] = { ...store.transactions[txIndex], isShared: true };
+  const tx = { ...store.transactions[txIndex], isShared: true };
+  store.transactions[txIndex] = tx;
   await setStore(user.id, store);
 
-  return NextResponse.json({ ok: true, transaction: store.transactions[txIndex] });
+  // Notify both household members
+  const sharedTotal = store.transactions
+    .filter((t) => t.isShared && t.type === "expense")
+    .reduce((s, t) => s + Math.abs(t.amount), 0);
+
+  dispatchToHousehold(
+    user.id,
+    "HOUSEHOLD_EXPENSE_SHARED",
+    (_uid, _myName, partnerName) =>
+      Templates.HOUSEHOLD_EXPENSE_SHARED(
+        partnerName,
+        tx.description,
+        Math.abs(tx.amount),
+        tx.category?.name ?? "",
+        sharedTotal,
+      ),
+    { transactionId: tx.id },
+  ).catch(() => {});
+
+  return NextResponse.json({ ok: true, transaction: tx });
 }

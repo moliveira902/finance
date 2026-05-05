@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
   LayoutDashboard, ArrowLeftRight, RepeatIcon,
-  BarChart2, Settings, LogOut, Wallet, ShieldCheck, Bot, Home,
+  BarChart2, Settings, LogOut, Wallet, ShieldCheck, Bot, Home, Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFinanceStore } from "@/stores/financeStore";
@@ -28,12 +28,13 @@ function shortName(name: string): string {
 }
 
 const NAV = [
-  { label: "Dashboard",     href: "/dashboard",    icon: LayoutDashboard },
-  { label: "Transações",    href: "/transactions", icon: ArrowLeftRight  },
-  { label: "Recorrentes",   href: "/recorrentes",  icon: RepeatIcon      },
-  { label: "Relatórios",    href: "/reports",      icon: BarChart2       },
-  { label: "Meu Consultor", href: "/coach",        icon: Bot             },
-  { label: "Configurações", href: "/settings",     icon: Settings        },
+  { label: "Dashboard",        href: "/dashboard",    icon: LayoutDashboard },
+  { label: "Transações",       href: "/transactions", icon: ArrowLeftRight  },
+  { label: "Recorrentes",      href: "/recorrentes",  icon: RepeatIcon      },
+  { label: "Relatórios",       href: "/reports",      icon: BarChart2       },
+  { label: "Saúde financeira", href: "/score",        icon: Activity        },
+  { label: "Meu Consultor",    href: "/coach",        icon: Bot             },
+  { label: "Configurações",    href: "/settings",     icon: Settings        },
 ];
 
 export function Sidebar() {
