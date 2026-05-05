@@ -128,8 +128,6 @@ export async function computeHealthScore(userId: string): Promise<HealthScore> {
   const expenses = currentMonthEntry.expense;
 
   const activeMonths = months.filter((m) => m.income > 0 || m.expense > 0);
-  const avgMonthlyIncome  = activeMonths.length > 0
-    ? activeMonths.reduce((s, m) => s + m.income, 0) / activeMonths.length : 0;
   const avgMonthlyExpense = activeMonths.length > 0
     ? activeMonths.reduce((s, m) => s + m.expense, 0) / activeMonths.length : 0;
 
@@ -288,7 +286,7 @@ export async function awardBadge(userId: string, badgeId: string): Promise<void>
   await kvSet(badgesKey(userId), [...earned, { badgeId, earnedAt: new Date().toISOString() }]);
 }
 
-export async function useStreakFreeze(userId: string): Promise<{ ok: boolean; message: string }> {
+export async function applyStreakFreeze(userId: string): Promise<{ ok: boolean; message: string }> {
   const prefs  = await getUserPrefs(userId);
   const nowKey = new Date().toISOString().slice(0, 7);
   if (prefs.streakFreezeUsedMonth?.slice(0, 7) === nowKey) {
