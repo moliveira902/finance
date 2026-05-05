@@ -5,9 +5,29 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "1.8.0";
+export const CURRENT_VERSION = "1.9.0";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.9.0",
+    date: "2026-05-05",
+    title: "Saúde Financeira & Notificações",
+    items: [
+      "Índice de saúde financeira 0–100 em 5 dimensões: taxa de poupança, controle de gastos, reserva de emergência, proporção despesas/renda e consistência semanal",
+      "5 níveis de saúde: Iniciante → Básico → Bom → Ótimo → Excelente",
+      "14 conquistas desbloqueáveis por marcos financeiros (primeira transação, poupança, reserva, sequências, pontuação, Casa, Telegram)",
+      "Histórico mensal de pontuação com gráfico de linha (Recharts)",
+      "Proteção de sequência: use uma vez por mês para preservar sua streak",
+      "Widget de saúde financeira no Dashboard com atalho para a página completa",
+      "Página /score: anel SVG animado, barras por dimensão, badge grid e histórico",
+      "Sino de notificações no topo com contagem de não lidas e dropdown",
+      "Sistema de notificações in-app + Telegram via n8n (anti-spam: horário silencioso, limite diário, por tipo)",
+      "Configurações → Notificações: conectar Telegram via deep link e controle por tipo",
+      "Notificação automática ao compartilhar gasto na Casa (HOUSEHOLD_EXPENSE_SHARED)",
+      "Notificação automática ao fechar mês da Casa (HOUSEHOLD_SETTLEMENT_CLOSED)",
+      "Cron semanal (Vercel) para recomputar pontuação de todos os usuários",
+    ],
+  },
   {
     version: "1.8.0",
     date: "2026-05-04",
