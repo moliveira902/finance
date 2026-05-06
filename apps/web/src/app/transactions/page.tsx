@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Search, Plus, Upload, Sparkles, Trash2, RepeatIcon, Send } from "lucide-react";
+import { Search, Plus, Upload, Sparkles, Trash2, Pencil, RepeatIcon, Send } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { TransactionModal } from "@/components/modals/TransactionModal";
 import { CsvImportModal } from "@/components/modals/CsvImportModal";
 import { useFinanceStore } from "@/stores/financeStore";
-import { formatBRL, formatDate } from "@/lib/mock-data";
+import { formatBRL, formatDate, type Transaction } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/contexts/LanguageContext";
 
@@ -23,6 +23,7 @@ export default function TransactionsPage() {
   const [catFilter,  setCatFilter]  = useState("all");
   const [showNew,    setShowNew]    = useState(false);
   const [showCsv,    setShowCsv]    = useState(false);
+  const [editing,    setEditing]    = useState<Transaction | null>(null);
 
   const now = new Date();
   const monthLabel = now.toLocaleDateString(locale, { month: "long", year: "numeric" });
@@ -178,11 +179,18 @@ export default function TransactionsPage() {
                     </span>
                   </td>
                   <td className="pr-3">
-                    <button
-                      onClick={() => deleteTransaction(tx.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all">
-                      <Trash2 size={13} />
-                    </button>
+                    <div className="flex items-center justify-end gap-0.5">
+                      <button
+                        onClick={() => setEditing(tx)}
+                        className="p-1.5 rounded-lg text-slate-300 dark:text-slate-600 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/30 group-hover:text-slate-400 transition-colors">
+                        <Pencil size={12} />
+                      </button>
+                      <button
+                        onClick={() => deleteTransaction(tx.id)}
+                        className="p-1.5 rounded-lg text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 group-hover:text-slate-400 transition-colors">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -207,8 +215,9 @@ export default function TransactionsPage() {
         )}
       </Card>
 
-      <TransactionModal open={showNew} onClose={() => setShowNew(false)} />
-      <CsvImportModal   open={showCsv} onClose={() => setShowCsv(false)} />
+      <TransactionModal open={showNew}    onClose={() => setShowNew(false)} />
+      <TransactionModal open={!!editing} onClose={() => setEditing(null)} initial={editing ?? undefined} />
+      <CsvImportModal   open={showCsv}   onClose={() => setShowCsv(false)} />
     </div>
   );
 }
