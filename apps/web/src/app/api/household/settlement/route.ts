@@ -40,7 +40,6 @@ export async function POST(request: Request) {
             partnerName, partnerAmount, partnerPct,
           ),
           { householdId: hh.id, month },
-          hh.id,
         );
       };
 

@@ -64,11 +64,10 @@ export async function sendTelegramMessage(botToken: string, chatId: string, text
 // ── Main dispatch ─────────────────────────────────────────────────────────────
 
 export async function dispatch(
-  userId:    string,
-  type:      string,
-  message:   string,
-  metadata:  Record<string, unknown> = {},
-  householdId?: string,
+  userId:   string,
+  type:     string,
+  message:  string,
+  metadata: Record<string, unknown> = {},
 ): Promise<void> {
   if (!isKvConfigured()) return;
 
@@ -174,14 +173,12 @@ export async function dispatchToHousehold(
       type,
       messageBuilder(household.ownerUserId, ownerStore.profile.name || household.ownerName, memberStore.profile.name || household.memberName),
       metadata,
-      household.id,
     ),
     dispatch(
       household.memberUserId,
       type,
       messageBuilder(household.memberUserId, memberStore.profile.name || household.memberName, ownerStore.profile.name || household.ownerName),
       metadata,
-      household.id,
     ),
   ]);
 }
