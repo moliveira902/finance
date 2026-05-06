@@ -298,7 +298,7 @@ export default function ReportsPage() {
           <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             {t("reports.income")} ({monthLabel})
           </p>
-          <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
+          <p className="text-sm @sm:text-base @md:text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums whitespace-nowrap">
             {formatBRL(kpiIncome)}
           </p>
           {!isAllTime && prev && prev.income > 0 && (
@@ -313,7 +313,7 @@ export default function ReportsPage() {
           <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             {t("reports.expenses")} ({monthLabel})
           </p>
-          <p className="text-xl font-bold text-red-500 dark:text-red-400 mt-1 tabular-nums">
+          <p className="text-sm @sm:text-base @md:text-xl font-bold text-red-500 dark:text-red-400 mt-1 tabular-nums whitespace-nowrap">
             {formatBRL(kpiExpenses)}
           </p>
           {!isAllTime && prev && prev.expenses > 0 && (
@@ -328,7 +328,7 @@ export default function ReportsPage() {
           <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             {t("reports.savings")} ({monthLabel})
           </p>
-          <p className={cn("text-xl font-bold mt-1 tabular-nums",
+          <p className={cn("text-sm @sm:text-base @md:text-xl font-bold mt-1 tabular-nums whitespace-nowrap",
             savings >= 0 ? "text-slate-900 dark:text-white" : "text-red-500 dark:text-red-400")}>
             {formatBRL(savings)}
           </p>

@@ -191,7 +191,7 @@ export default function HouseholdPage() {
         ].map(({ label, value, color }) => (
           <Card key={label}>
             <p className="text-xs text-slate-400 dark:text-slate-500 mb-1">{label}</p>
-            <p className={`text-xl font-bold tabular-nums ${color}`}>{formatBRL(value)}</p>
+            <p className={`text-sm @sm:text-base @md:text-xl font-bold tabular-nums whitespace-nowrap ${color}`}>{formatBRL(value)}</p>
           </Card>
         ))}
       </div>

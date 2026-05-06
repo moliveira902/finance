@@ -72,7 +72,7 @@ export default function TransactionsPage() {
         ].map(({ label, value, color }) => (
           <Card key={label} className="py-4">
             <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</p>
-            <p className={cn("text-xl font-bold mt-1 tabular-nums", color)}>{value}</p>
+            <p className={cn("text-sm @sm:text-base @md:text-xl font-bold mt-1 tabular-nums whitespace-nowrap", color)}>{value}</p>
           </Card>
         ))}
       </div>
