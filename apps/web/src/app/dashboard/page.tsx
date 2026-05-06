@@ -22,14 +22,14 @@ function KpiCard({ label, value, sub, positive }: {
       <CardLabel>{label}</CardLabel>
       <CardValue>{value}</CardValue>
       <p className={cn(
-        "flex items-center gap-1 text-xs mt-2 font-medium",
+        "flex items-center gap-1 text-xs mt-2 font-medium truncate",
         positive === undefined ? "text-slate-400 dark:text-slate-500"
           : positive ? "text-emerald-600 dark:text-emerald-400"
           : "text-red-500 dark:text-red-400"
       )}>
-        {positive === true  && <TrendingUp  size={11} />}
-        {positive === false && <TrendingDown size={11} />}
-        {sub}
+        {positive === true  && <TrendingUp  size={11} className="shrink-0" />}
+        {positive === false && <TrendingDown size={11} className="shrink-0" />}
+        <span className="truncate">{sub}</span>
       </p>
     </Card>
   );

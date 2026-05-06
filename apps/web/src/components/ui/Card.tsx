@@ -14,7 +14,7 @@ export function Card({ children, className, onClick }: CardProps) {
       className={cn(
         "bg-white dark:bg-slate-800/60 dark:border-slate-700/60",
         "rounded-2xl border border-slate-100 shadow-sm",
-        "p-4 @sm:p-6",
+        "p-4 @sm:p-6 overflow-hidden",
         onClick && "cursor-pointer hover:shadow-md hover:border-slate-200 dark:hover:border-slate-600 transition-all",
         className
       )}
@@ -34,7 +34,7 @@ export function CardLabel({ children, className }: { children: React.ReactNode; 
 
 export function CardValue({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <p className={cn("text-xl @sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums", className)}>
+    <p className={cn("text-sm @sm:text-base @md:text-xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums whitespace-nowrap", className)}>
       {children}
     </p>
   );
