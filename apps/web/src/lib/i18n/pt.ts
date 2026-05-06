@@ -274,6 +274,12 @@ export const pt = {
     dataExportDesc:    "Baixe todos os seus dados em formato JSON.",
     dataDelete:        "Excluir conta",
     dataDeleteDesc:    "Remove permanentemente todos os seus dados.",
+    inactivityTitle:   "Reengajamento por Inatividade",
+    inactivitySub:     "Enviar um lembrete quando o app não for aberto por alguns dias.",
+    inactivityEnable:  "Ativar",
+    inactivityDays:    "Dias sem acesso",
+    inactivitySave:    "Salvar",
+    inactivitySaved:   "Salvo",
   },
   notifTypes: {
     SCORE_WEEKLY_SUMMARY:        "Resumo semanal de pontuação",
@@ -295,6 +301,7 @@ export const pt = {
     HOUSEHOLD_SETTLEMENT_CLOSED: "Mês fechado na Casa",
     HOUSEHOLD_MONTHLY_SUMMARY:   "Resumo mensal da Casa",
     COACH_WEEKLY_INSIGHT:        "Insight semanal do consultor",
+    INACTIVITY_NUDGE:            "Reengajamento por inatividade",
   },
   notifications: {
     title:  "Notificações",

@@ -15,6 +15,7 @@ export const DEFAULT_NOTIFICATION_TYPES: Record<string, boolean> = {
   HOUSEHOLD_EXPENSE_SHARED: true,
   HOUSEHOLD_BUDGET_ALERT:   true,
   COACH_WEEKLY_INSIGHT:     true,
+  INACTIVITY_NUDGE:         true,
 };
 
 export const DEFAULT_TYPE_CHANNELS: Record<string, { telegram: boolean; email: boolean }> = {
@@ -30,6 +31,7 @@ export const DEFAULT_TYPE_CHANNELS: Record<string, { telegram: boolean; email: b
   HOUSEHOLD_EXPENSE_SHARED: { telegram: true,  email: false },
   HOUSEHOLD_BUDGET_ALERT:   { telegram: true,  email: false },
   COACH_WEEKLY_INSIGHT:     { telegram: false, email: true  },
+  INACTIVITY_NUDGE:         { telegram: true,  email: true  },
 };
 
 export interface NotificationPrefs {
@@ -40,6 +42,7 @@ export interface NotificationPrefs {
   max_per_day:        number;
   types:              Record<string, boolean>;
   typeChannels:       Record<string, { telegram: boolean; email: boolean }>;
+  inactivityNudge:    { enabled: boolean; thresholdDays: number };
 }
 
 export interface UserPrefs {
@@ -47,6 +50,7 @@ export interface UserPrefs {
   telegramBotToken?:      string;
   telegramConnectedAt?:   string;
   streakFreezeUsedMonth?: string; // YYYY-MM
+  lastActiveAt?:          string; // ISO timestamp of last app open
   notificationPrefs:      NotificationPrefs;
 }
 
@@ -59,6 +63,7 @@ const DEFAULT_PREFS: UserPrefs = {
     max_per_day:       3,
     types:             DEFAULT_NOTIFICATION_TYPES,
     typeChannels:      DEFAULT_TYPE_CHANNELS,
+    inactivityNudge:   { enabled: true, thresholdDays: 2 },
   },
 };
 
@@ -78,8 +83,9 @@ export async function getUserPrefs(userId: string): Promise<UserPrefs> {
     notificationPrefs: {
       ...DEFAULT_PREFS.notificationPrefs,
       ...raw.notificationPrefs,
-      types:        { ...DEFAULT_NOTIFICATION_TYPES, ...raw.notificationPrefs?.types },
-      typeChannels: { ...DEFAULT_TYPE_CHANNELS,      ...raw.notificationPrefs?.typeChannels },
+      types:          { ...DEFAULT_NOTIFICATION_TYPES, ...raw.notificationPrefs?.types },
+      typeChannels:   { ...DEFAULT_TYPE_CHANNELS,      ...raw.notificationPrefs?.typeChannels },
+      inactivityNudge: raw.notificationPrefs?.inactivityNudge ?? DEFAULT_PREFS.notificationPrefs.inactivityNudge,
     },
   };
 }
@@ -93,8 +99,9 @@ export async function setUserPrefs(userId: string, update: Partial<UserPrefs>): 
       ? {
           ...current.notificationPrefs,
           ...update.notificationPrefs,
-          types:        { ...current.notificationPrefs.types,        ...update.notificationPrefs.types },
-          typeChannels: { ...current.notificationPrefs.typeChannels, ...update.notificationPrefs.typeChannels },
+          types:           { ...current.notificationPrefs.types,        ...update.notificationPrefs.types },
+          typeChannels:    { ...current.notificationPrefs.typeChannels, ...update.notificationPrefs.typeChannels },
+          inactivityNudge: update.notificationPrefs.inactivityNudge ?? current.notificationPrefs.inactivityNudge,
         }
       : current.notificationPrefs,
   };

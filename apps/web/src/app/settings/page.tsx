@@ -168,6 +168,7 @@ export default function SettingsPage() {
     HOUSEHOLD_SETTLEMENT_CLOSED: t("notifTypes.HOUSEHOLD_SETTLEMENT_CLOSED"),
     HOUSEHOLD_MONTHLY_SUMMARY:   t("notifTypes.HOUSEHOLD_MONTHLY_SUMMARY"),
     COACH_WEEKLY_INSIGHT:        t("notifTypes.COACH_WEEKLY_INSIGHT"),
+    INACTIVITY_NUDGE:            t("notifTypes.INACTIVITY_NUDGE"),
   };
 
   const [tab, setTab] = useState<Tab>("profile");
@@ -191,6 +192,23 @@ export default function SettingsPage() {
 
   // Notification prefs (persisted)
   const notifPrefs = useNotificationPrefs();
+
+  // Inactivity nudge local state
+  const [inactivityDays,  setInactivityDays]  = useState(2);
+  const [inactivitySaved, setInactivitySaved] = useState(false);
+
+  // Sync inactivity threshold from loaded prefs
+  useEffect(() => {
+    const days = notifPrefs.data?.prefs?.inactivityNudge?.thresholdDays;
+    if (days) setInactivityDays(days);
+  }, [notifPrefs.data?.prefs?.inactivityNudge?.thresholdDays]);
+
+  function handleSaveInactivity() {
+    const enabled = notifPrefs.data?.prefs?.types?.["INACTIVITY_NUDGE"] !== false;
+    notifPrefs.update({ inactivityNudge: { enabled, thresholdDays: inactivityDays } });
+    setInactivitySaved(true);
+    setTimeout(() => setInactivitySaved(false), 2500);
+  }
 
   // Telegram credentials form
   const [tgBotToken,    setTgBotToken]    = useState("");
@@ -874,6 +892,40 @@ export default function SettingsPage() {
                       );
                     })
                   }
+                </Card>
+              )}
+
+              {/* Inactivity nudge threshold config */}
+              {notifPrefs.data?.prefs?.types?.["INACTIVITY_NUDGE"] !== false && (
+                <Card>
+                  <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{t("settings.inactivityTitle")}</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t("settings.inactivitySub")}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 space-y-1.5">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {t("settings.inactivityDays")}
+                      </label>
+                      <select
+                        value={inactivityDays}
+                        onChange={(e) => setInactivityDays(Number(e.target.value))}
+                        className="h-9 pl-3 pr-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200 focus:outline-none appearance-none cursor-pointer w-full"
+                      >
+                        {[1, 2, 3, 5, 7].map((d) => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2 pt-5">
+                      <Button size="sm" onClick={handleSaveInactivity}>
+                        {t("settings.inactivitySave")}
+                      </Button>
+                      {inactivitySaved && (
+                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                          <Check size={12} /> {t("settings.inactivitySaved")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </Card>
               )}
             </>

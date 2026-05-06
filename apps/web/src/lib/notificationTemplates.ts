@@ -102,4 +102,24 @@ export const Templates = {
   COACH_WEEKLY_INSIGHT: (name: string, insightText: string) =>
     `💡 Insight do seu consultor, ${name}:\n\n_${insightText}_\n\n` +
     `Responda esta mensagem para conversar com o consultor.`,
+
+  INACTIVITY_NUDGE: (name: string, dayOfMonth: number, daysSince: number) => {
+    const days = daysSince === 1 ? "1 dia" : `${daysSince} dias`;
+    if (dayOfMonth >= 26) {
+      return (
+        `👀 ${name}, faz ${days} que você não abre o app.\n\n` +
+        `O mês está quase fechando! Que tal registrar as últimas transações antes do balanço mensal? 📊`
+      );
+    }
+    if (dayOfMonth <= 5) {
+      return (
+        `🗓️ ${name}, o mês novo já começou há ${days}!\n\n` +
+        `Abra o app para definir suas metas e começar o controle financeiro com o pé direito. 🚀`
+      );
+    }
+    return (
+      `🌱 Olá, ${name}! Faz ${days} que não te vemos por aqui.\n\n` +
+      `Seus registros financeiros estão esperando. Abra o app e mantenha o controle em dia! 💪`
+    );
+  },
 };

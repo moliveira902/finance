@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { getStore, setStore, kvDel, isKvConfigured } from "@/lib/kv-store";
 import type { StoreData } from "@/lib/kv-store";
+import { setUserPrefs } from "@/lib/userPrefs";
 
 const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "dev-secret-key-change-in-production-32+"
@@ -37,6 +38,11 @@ export async function GET(request: Request) {
   if (!data.profile.name && user.name) {
     data.profile = { name: user.name, email: user.email };
     await setStore(user.id, data);
+  }
+
+  // Track last active timestamp (fire-and-forget)
+  if (isKvConfigured()) {
+    setUserPrefs(user.id, { lastActiveAt: new Date().toISOString() }).catch(() => {});
   }
 
   return NextResponse.json({ data });

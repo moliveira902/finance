@@ -119,6 +119,7 @@ export interface NotificationPrefsData {
     max_per_day:       number;
     types:             Record<string, boolean>;
     typeChannels:      Record<string, { telegram: boolean; email: boolean }>;
+    inactivityNudge:   { enabled: boolean; thresholdDays: number };
   };
 }
 
@@ -139,7 +140,7 @@ export function useNotificationPrefs() {
 
   useEffect(() => { refetch(); }, [refetch]);
 
-  const update = useCallback((patch: { types?: Record<string, boolean>; typeChannels?: Record<string, { telegram: boolean; email: boolean }>; telegram_enabled?: boolean; email_enabled?: boolean }) => {
+  const update = useCallback((patch: { types?: Record<string, boolean>; typeChannels?: Record<string, { telegram: boolean; email: boolean }>; telegram_enabled?: boolean; email_enabled?: boolean; inactivityNudge?: { enabled: boolean; thresholdDays: number } }) => {
     fetch("/api/notifications/preferences", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

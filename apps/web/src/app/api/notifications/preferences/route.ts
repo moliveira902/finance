@@ -32,6 +32,7 @@ export async function PUT(request: Request) {
     max_per_day?:       number;
     types?:             Record<string, boolean>;
     typeChannels?:      Record<string, { telegram: boolean; email: boolean }>;
+    inactivityNudge?:   { enabled: boolean; thresholdDays: number };
   };
 
   const userPatch: Partial<UserPrefs> = {};
@@ -52,6 +53,7 @@ export async function PUT(request: Request) {
   if (body.max_per_day       !== undefined) notifPatch.max_per_day       = body.max_per_day;
   if (body.types             !== undefined) notifPatch.types             = body.types;
   if (body.typeChannels      !== undefined) notifPatch.typeChannels      = body.typeChannels;
+  if (body.inactivityNudge   !== undefined) notifPatch.inactivityNudge   = body.inactivityNudge;
   if (Object.keys(notifPatch).length > 0)  userPatch.notificationPrefs   = notifPatch as never;
 
   const updated = await setUserPrefs(user.id, userPatch);

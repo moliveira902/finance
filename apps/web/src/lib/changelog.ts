@@ -5,9 +5,21 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "2.1.0";
+export const CURRENT_VERSION = "2.2.0";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "2.2.0",
+    date: "2026-05-06",
+    title: "Reengajamento por Inatividade",
+    items: [
+      "Novo sistema de reengajamento: se o usuário não abre o app por N dias, recebe um lembrete personalizado via Telegram ou email",
+      "Mensagem adaptada ao momento do mês: fim de mês (fechamento), início de mês (metas) ou check-in genérico",
+      "Configurável em Configurações → Notificações → Reengajamento por Inatividade: ativar/desativar e definir o número de dias (1, 2, 3, 5 ou 7)",
+      "Disponível como tipo de notificação independente com seleção de canal (Push / Email)",
+      "Cron diário às 10h BRT verifica todos os usuários e dispara o lembrete apenas para os inativos há pelo menos N dias",
+    ],
+  },
   {
     version: "2.1.0",
     date: "2026-05-06",

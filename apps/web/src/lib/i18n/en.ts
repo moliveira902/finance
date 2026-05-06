@@ -274,6 +274,12 @@ export const en = {
     dataExportDesc:    "Download all your data in JSON format.",
     dataDelete:        "Delete account",
     dataDeleteDesc:    "Permanently removes all your data.",
+    inactivityTitle:   "Inactivity Re-engagement",
+    inactivitySub:     "Send a nudge when the app hasn't been opened for a while.",
+    inactivityEnable:  "Enable",
+    inactivityDays:    "Days without access",
+    inactivitySave:    "Save",
+    inactivitySaved:   "Saved",
   },
   notifTypes: {
     SCORE_WEEKLY_SUMMARY:        "Weekly score summary",
@@ -295,6 +301,7 @@ export const en = {
     HOUSEHOLD_SETTLEMENT_CLOSED: "Month closed in Household",
     HOUSEHOLD_MONTHLY_SUMMARY:   "Household monthly summary",
     COACH_WEEKLY_INSIGHT:        "Weekly advisor insight",
+    INACTIVITY_NUDGE:            "Inactivity re-engagement",
   },
   notifications: {
     title:  "Notifications",
