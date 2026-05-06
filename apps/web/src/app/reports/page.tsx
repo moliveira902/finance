@@ -113,11 +113,15 @@ type ViewMode = "personal" | "household";
 export default function ReportsPage() {
   const { transactions: personalTxns } = useFinanceStore();
 
-  const [selectedIdx,  setSelectedIdx]  = useState(5);
-  const [viewMode,     setViewMode]     = useState<ViewMode>("personal");
-  const [household,    setHousehold]    = useState<HouseholdMeta | null>(null);
-  const [combinedTxns, setCombinedTxns] = useState<CombinedTransaction[]>([]);
-  const [loadingHH,    setLoadingHH]    = useState(false);
+  const [selectedIdx,       setSelectedIdx]       = useState(5);
+  const [viewMode,          setViewMode]          = useState<ViewMode>("personal");
+  const [household,         setHousehold]         = useState<HouseholdMeta | null>(null);
+  const [combinedTxns,      setCombinedTxns]      = useState<CombinedTransaction[]>([]);
+  const [loadingHH,         setLoadingHH]         = useState(false);
+  const [expandedCategory,  setExpandedCategory]  = useState<string | null>(null);
+
+  // Collapse drill-down whenever the period or view changes
+  useEffect(() => { setExpandedCategory(null); }, [selectedIdx, viewMode]);
 
   // Check for household on mount
   useEffect(() => {
@@ -186,6 +190,18 @@ export default function ReportsPage() {
 
   const ownerColor  = "#0ea5e9"; // sky-500
   const memberColor = "#8b5cf6"; // violet-500
+
+  function getCategoryTxns(categoryName: string) {
+    const source = viewMode === "household" ? combinedTxns : personalTxns;
+    return (source as Array<typeof source[number]>)
+      .filter((t) => {
+        if (t.category.name !== categoryName || t.type !== "expense") return false;
+        if (isAllTime) return true;
+        const td = new Date(t.date);
+        return td.getFullYear() === selected!.year && td.getMonth() === selected!.monthIndex;
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }
 
   return (
     <div className="space-y-6">
@@ -382,26 +398,60 @@ export default function ReportsPage() {
             <p className="text-sm text-slate-400 text-center py-8">Sem despesas neste período.</p>
           ) : (
             <div>
-              <div className="grid grid-cols-2 @2xl:grid-cols-3 pb-2.5 border-b border-slate-100 dark:border-slate-700 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <div className="grid grid-cols-[1fr_auto_auto_auto] pb-2.5 border-b border-slate-100 dark:border-slate-700 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                 <span>Categoria</span>
-                <span className="text-right">Total</span>
-                <span className="hidden @2xl:block text-right">% do total</span>
+                <span className="text-right pr-4 hidden @2xl:block">% do total</span>
+                <span className="text-right pr-4">Total</span>
+                <span />
               </div>
-              {catBreakdown.map((c) => (
-                <div key={c.name}
-                  className="grid grid-cols-2 @2xl:grid-cols-3 py-3 items-center border-b border-slate-50 dark:border-slate-700/50 last:border-0">
-                  <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-medium">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
-                    {c.name}
-                  </span>
-                  <span className="text-right text-sm font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
-                    {formatBRL(c.value)}
-                  </span>
-                  <span className="hidden @2xl:block text-right text-sm text-slate-500 dark:text-slate-400 tabular-nums">
-                    {catTotal > 0 ? ((c.value / catTotal) * 100).toFixed(1) : "0.0"}%
-                  </span>
-                </div>
-              ))}
+              {catBreakdown.map((c) => {
+                const isOpen = expandedCategory === c.name;
+                const txns   = isOpen ? getCategoryTxns(c.name) : [];
+                return (
+                  <div key={c.name} className="border-b border-slate-50 dark:border-slate-700/50 last:border-0">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCategory(isOpen ? null : c.name)}
+                      className="w-full grid grid-cols-[1fr_auto_auto_auto] py-3 items-center hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-lg transition-colors px-1 -mx-1"
+                    >
+                      <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-medium text-left">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
+                        {c.name}
+                      </span>
+                      <span className="text-right pr-4 text-sm text-slate-500 dark:text-slate-400 tabular-nums hidden @2xl:block">
+                        {catTotal > 0 ? ((c.value / catTotal) * 100).toFixed(1) : "0.0"}%
+                      </span>
+                      <span className="text-right pr-4 text-sm font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
+                        {formatBRL(c.value)}
+                      </span>
+                      <ChevronDown size={14} className={cn("text-slate-400 transition-transform", isOpen && "rotate-180")} />
+                    </button>
+                    {isOpen && (
+                      <div className="pb-3 pl-4 space-y-1">
+                        {txns.length === 0 ? (
+                          <p className="text-xs text-slate-400 py-2">Sem transações.</p>
+                        ) : txns.map((tx) => {
+                          const t = tx as Transaction;
+                          return (
+                            <div key={t.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-base leading-none shrink-0">{t.category.icon}</span>
+                                <div className="min-w-0">
+                                  <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{t.description}</p>
+                                  <p className="text-[11px] text-slate-400">{new Date(t.date).toLocaleDateString("pt-BR")}</p>
+                                </div>
+                              </div>
+                              <span className="text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200 shrink-0 ml-4">
+                                {formatBRL(Math.abs(t.amount))}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </Card>
@@ -427,45 +477,74 @@ export default function ReportsPage() {
               </div>
 
               {combinedCatBreakdown.map((c) => {
-                const total = c.ownerAmount + c.memberAmount;
+                const total     = c.ownerAmount + c.memberAmount;
                 const ownerPct  = total > 0 ? (c.ownerAmount  / total) * 100 : 0;
                 const memberPct = total > 0 ? (c.memberAmount / total) * 100 : 0;
+                const isOpen    = expandedCategory === c.name;
+                const txns      = isOpen ? getCategoryTxns(c.name) as CombinedTransaction[] : [];
                 return (
-                  <div key={c.name}
-                    className="py-3 border-b border-slate-50 dark:border-slate-700/50 last:border-0 space-y-2">
-                    {/* Row */}
-                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 items-center">
-                      <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-medium min-w-0">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
-                        <span className="truncate">{c.name}</span>
-                      </span>
-                      <span className="text-right text-sm tabular-nums text-slate-600 dark:text-slate-400">
-                        {formatBRL(c.ownerAmount)}
-                      </span>
-                      <span className="text-right text-sm tabular-nums text-slate-600 dark:text-slate-400">
-                        {formatBRL(c.memberAmount)}
-                      </span>
-                      <span className="text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">
-                        {formatBRL(total)}
-                      </span>
-                    </div>
-                    {/* Split bar */}
-                    {total > 0 && (
-                      <div className="flex h-1.5 rounded-full overflow-hidden gap-px ml-5">
-                        {c.ownerAmount > 0 && (
-                          <div
-                            style={{ width: `${ownerPct}%`, background: ownerColor }}
-                            className="rounded-l-full"
-                            title={`${household.ownerName}: ${ownerPct.toFixed(0)}%`}
-                          />
-                        )}
-                        {c.memberAmount > 0 && (
-                          <div
-                            style={{ width: `${memberPct}%`, background: memberColor }}
-                            className="rounded-r-full"
-                            title={`${household.memberName}: ${memberPct.toFixed(0)}%`}
-                          />
-                        )}
+                  <div key={c.name} className="border-b border-slate-50 dark:border-slate-700/50 last:border-0">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCategory(isOpen ? null : c.name)}
+                      className="w-full py-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-lg transition-colors px-1 -mx-1 space-y-2"
+                    >
+                      {/* Row */}
+                      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-4 items-center">
+                        <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 font-medium min-w-0 text-left">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
+                          <span className="truncate">{c.name}</span>
+                        </span>
+                        <span className="text-right text-sm tabular-nums text-slate-600 dark:text-slate-400">
+                          {formatBRL(c.ownerAmount)}
+                        </span>
+                        <span className="text-right text-sm tabular-nums text-slate-600 dark:text-slate-400">
+                          {formatBRL(c.memberAmount)}
+                        </span>
+                        <span className="text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+                          {formatBRL(total)}
+                        </span>
+                        <ChevronDown size={14} className={cn("text-slate-400 transition-transform", isOpen && "rotate-180")} />
+                      </div>
+                      {/* Split bar */}
+                      {total > 0 && (
+                        <div className="flex h-1.5 rounded-full overflow-hidden gap-px ml-5">
+                          {c.ownerAmount > 0 && (
+                            <div style={{ width: `${ownerPct}%`, background: ownerColor }} className="rounded-l-full"
+                              title={`${household.ownerName}: ${ownerPct.toFixed(0)}%`} />
+                          )}
+                          {c.memberAmount > 0 && (
+                            <div style={{ width: `${memberPct}%`, background: memberColor }} className="rounded-r-full"
+                              title={`${household.memberName}: ${memberPct.toFixed(0)}%`} />
+                          )}
+                        </div>
+                      )}
+                    </button>
+                    {isOpen && (
+                      <div className="pb-3 pl-4 space-y-1">
+                        {txns.length === 0 ? (
+                          <p className="text-xs text-slate-400 py-2">Sem transações.</p>
+                        ) : txns.map((tx) => (
+                          <div key={`${tx.paidByUserId}-${tx.id}`}
+                            className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-2 h-2 rounded-full shrink-0"
+                                style={{ background: tx.paidByUserId === household.ownerUserId ? ownerColor : memberColor }} />
+                              <div className="min-w-0">
+                                <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{tx.description}</p>
+                                <p className="text-[11px] text-slate-400">
+                                  <span style={{ color: tx.paidByUserId === household.ownerUserId ? ownerColor : memberColor }}>
+                                    {tx.paidByName}
+                                  </span>
+                                  {" · "}{new Date(tx.date).toLocaleDateString("pt-BR")}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200 shrink-0 ml-4">
+                              {formatBRL(Math.abs(tx.amount))}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

@@ -5,9 +5,24 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "1.9.0";
+export const CURRENT_VERSION = "2.0.0";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "2.0.0",
+    date: "2026-05-05",
+    title: "Relatórios Avançados & Notificações por Email e Telegram",
+    items: [
+      "Relatórios: filtro 'Todos os períodos' no seletor de mês — KPIs e categorias agregam todo o histórico",
+      "Relatórios: clique em qualquer categoria para expandir e ver todas as transações daquela categoria",
+      "Drill-down de categorias disponível tanto na visão pessoal quanto na visão do casal",
+      "Notificações por email via Resend — ative em Configurações → Notificações → Email",
+      "Telegram: configuração direta por Bot Token + Chat ID, sem deep link ou n8n",
+      "Botão 'Testar conexão' Telegram envia mensagem de confirmação imediatamente",
+      "Funcionalidades: toggle para ativar/desativar o módulo de Saúde Financeira",
+      "Saúde Financeira oculta na sidebar e no Dashboard quando desativada",
+    ],
+  },
   {
     version: "1.9.0",
     date: "2026-05-05",
@@ -21,8 +36,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Widget de saúde financeira no Dashboard com atalho para a página completa",
       "Página /score: anel SVG animado, barras por dimensão, badge grid e histórico",
       "Sino de notificações no topo com contagem de não lidas e dropdown",
-      "Sistema de notificações in-app + Telegram via n8n (anti-spam: horário silencioso, limite diário, por tipo)",
-      "Configurações → Notificações: conectar Telegram via deep link e controle por tipo",
+      "Sistema de notificações in-app com anti-spam: horário silencioso, limite diário, por tipo",
+      "Configurações → Notificações: controle por tipo de evento",
       "Notificação automática ao compartilhar gasto na Casa (HOUSEHOLD_EXPENSE_SHARED)",
       "Notificação automática ao fechar mês da Casa (HOUSEHOLD_SETTLEMENT_CLOSED)",
       "Cron semanal (Vercel) para recomputar pontuação de todos os usuários",
