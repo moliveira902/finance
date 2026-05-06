@@ -31,6 +31,7 @@ export async function PUT(request: Request) {
     quiet_hours_end?:   string;
     max_per_day?:       number;
     types?:             Record<string, boolean>;
+    typeChannels?:      Record<string, { telegram: boolean; email: boolean }>;
   };
 
   const userPatch: Partial<UserPrefs> = {};
@@ -50,6 +51,7 @@ export async function PUT(request: Request) {
   if (body.quiet_hours_end   !== undefined) notifPatch.quiet_hours_end   = body.quiet_hours_end;
   if (body.max_per_day       !== undefined) notifPatch.max_per_day       = body.max_per_day;
   if (body.types             !== undefined) notifPatch.types             = body.types;
+  if (body.typeChannels      !== undefined) notifPatch.typeChannels      = body.typeChannels;
   if (Object.keys(notifPatch).length > 0)  userPatch.notificationPrefs   = notifPatch as never;
 
   const updated = await setUserPrefs(user.id, userPatch);

@@ -1,6 +1,7 @@
 "use client";
 import { Monitor, Smartphone, Sun, Moon } from "lucide-react";
 import { useAppContext, type Viewport } from "@/contexts/AppContext";
+import { useTranslation } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "./NotificationBell";
 
@@ -11,6 +12,7 @@ const VIEWPORTS: { id: Viewport; label: string; icon: React.ElementType }[] = [
 
 export function Topbar() {
   const { theme, viewport, toggleTheme, setViewport } = useAppContext();
+  const { language, setLanguage } = useTranslation();
 
   return (
     <div className="sticky top-0 z-20 flex items-center gap-3 px-5 h-12 border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shrink-0">
@@ -37,6 +39,24 @@ export function Topbar() {
 
       <NotificationBell />
 
+      {/* Language toggle */}
+      <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">
+        {(["pt", "en"] as const).map((lang) => (
+          <button
+            key={lang}
+            onClick={() => setLanguage(lang)}
+            className={cn(
+              "h-7 px-2.5 rounded-md text-xs font-semibold transition-all uppercase",
+              language === lang
+                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
+                : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+            )}
+          >
+            {lang}
+          </button>
+        ))}
+      </div>
+
       {/* Dark / light toggle */}
       <button
         onClick={toggleTheme}
@@ -49,9 +69,9 @@ export function Topbar() {
         )}
       >
         {theme === "light" ? (
-          <><Moon size={13} /> Escuro</>
+          <><Moon size={13} /> {language === "en" ? "Dark" : "Escuro"}</>
         ) : (
-          <><Sun size={13} /> Claro</>
+          <><Sun size={13} /> {language === "en" ? "Light" : "Claro"}</>
         )}
       </button>
     </div>

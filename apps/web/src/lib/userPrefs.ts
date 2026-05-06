@@ -3,24 +3,33 @@ import { kvGet, kvSet, isKvConfigured } from "@/lib/kv-store";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export const DEFAULT_NOTIFICATION_TYPES: Record<string, boolean> = {
-  SCORE_WEEKLY_SUMMARY:        true,
-  SCORE_LEVEL_UP:              true,
-  STREAK_MILESTONE:            true,
-  STREAK_BROKEN:               true,
-  BADGE_EARNED:                true,
-  BUDGET_ALERT_80:             true,
-  BUDGET_ALERT_EXCEEDED:       true,
-  BUDGET_MONTHLY_REVIEW:       true,
-  MONTHLY_REPORT_READY:        true,
-  SAVINGS_POSITIVE:            true,
-  LOW_BALANCE_WARNING:         true,
-  SUBSCRIPTION_DETECTED:       true,
-  HOUSEHOLD_EXPENSE_SHARED:    true,
-  HOUSEHOLD_BUDGET_ALERT:      true,
-  HOUSEHOLD_SETTLEMENT_DUE:    true,
-  HOUSEHOLD_SETTLEMENT_CLOSED: true,
-  HOUSEHOLD_MONTHLY_SUMMARY:   true,
-  COACH_WEEKLY_INSIGHT:        true,
+  BADGE_EARNED:             true,
+  BUDGET_ALERT_80:          true,
+  BUDGET_ALERT_EXCEEDED:    true,
+  BUDGET_MONTHLY_REVIEW:    true,
+  MONTHLY_REPORT_READY:     true,
+  SAVINGS_POSITIVE:         true,
+  LOW_BALANCE_WARNING:      true,
+  SUBSCRIPTION_DETECTED:    true,
+  SUBSCRIPTION_UNUSED:      true,
+  HOUSEHOLD_EXPENSE_SHARED: true,
+  HOUSEHOLD_BUDGET_ALERT:   true,
+  COACH_WEEKLY_INSIGHT:     true,
+};
+
+export const DEFAULT_TYPE_CHANNELS: Record<string, { telegram: boolean; email: boolean }> = {
+  BADGE_EARNED:             { telegram: true,  email: false },
+  BUDGET_ALERT_80:          { telegram: true,  email: false },
+  BUDGET_ALERT_EXCEEDED:    { telegram: true,  email: true  },
+  BUDGET_MONTHLY_REVIEW:    { telegram: true,  email: false },
+  MONTHLY_REPORT_READY:     { telegram: true,  email: true  },
+  SAVINGS_POSITIVE:         { telegram: true,  email: false },
+  LOW_BALANCE_WARNING:      { telegram: true,  email: false },
+  SUBSCRIPTION_DETECTED:    { telegram: true,  email: false },
+  SUBSCRIPTION_UNUSED:      { telegram: true,  email: false },
+  HOUSEHOLD_EXPENSE_SHARED: { telegram: true,  email: false },
+  HOUSEHOLD_BUDGET_ALERT:   { telegram: true,  email: false },
+  COACH_WEEKLY_INSIGHT:     { telegram: false, email: true  },
 };
 
 export interface NotificationPrefs {
@@ -30,6 +39,7 @@ export interface NotificationPrefs {
   quiet_hours_end:    string;
   max_per_day:        number;
   types:              Record<string, boolean>;
+  typeChannels:       Record<string, { telegram: boolean; email: boolean }>;
 }
 
 export interface UserPrefs {
@@ -48,6 +58,7 @@ const DEFAULT_PREFS: UserPrefs = {
     quiet_hours_end:   "08:00",
     max_per_day:       3,
     types:             DEFAULT_NOTIFICATION_TYPES,
+    typeChannels:      DEFAULT_TYPE_CHANNELS,
   },
 };
 
@@ -67,7 +78,8 @@ export async function getUserPrefs(userId: string): Promise<UserPrefs> {
     notificationPrefs: {
       ...DEFAULT_PREFS.notificationPrefs,
       ...raw.notificationPrefs,
-      types: { ...DEFAULT_NOTIFICATION_TYPES, ...raw.notificationPrefs?.types },
+      types:        { ...DEFAULT_NOTIFICATION_TYPES, ...raw.notificationPrefs?.types },
+      typeChannels: { ...DEFAULT_TYPE_CHANNELS,      ...raw.notificationPrefs?.typeChannels },
     },
   };
 }
@@ -81,7 +93,8 @@ export async function setUserPrefs(userId: string, update: Partial<UserPrefs>): 
       ? {
           ...current.notificationPrefs,
           ...update.notificationPrefs,
-          types: { ...current.notificationPrefs.types, ...update.notificationPrefs.types },
+          types:        { ...current.notificationPrefs.types,        ...update.notificationPrefs.types },
+          typeChannels: { ...current.notificationPrefs.typeChannels, ...update.notificationPrefs.typeChannels },
         }
       : current.notificationPrefs,
   };

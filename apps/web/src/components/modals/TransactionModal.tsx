@@ -11,9 +11,10 @@ interface Props {
   open: boolean;
   onClose: () => void;
   initial?: Transaction;
+  defaultRecurring?: boolean;
 }
 
-export function TransactionModal({ open, onClose, initial }: Props) {
+export function TransactionModal({ open, onClose, initial, defaultRecurring }: Props) {
   const { categories, accounts, addTransaction, updateTransaction } = useFinanceStore();
   const today = new Date().toISOString().slice(0, 10);
 
@@ -23,7 +24,7 @@ export function TransactionModal({ open, onClose, initial }: Props) {
   const [catId,           setCatId]           = useState(initial?.category.id ?? categories[0]?.id ?? "");
   const [accId,           setAccId]           = useState(initial?.account.id  ?? accounts[0]?.id  ?? "");
   const [date,            setDate]            = useState(initial?.date ?? today);
-  const [isRecurring,     setIsRecurring]     = useState(initial?.isRecurring ?? false);
+  const [isRecurring,     setIsRecurring]     = useState(initial?.isRecurring ?? defaultRecurring ?? false);
   const [recurringPeriod, setRecurringPeriod] = useState<"monthly" | "yearly">(initial?.recurringPeriod ?? "monthly");
   const [recurringCount,  setRecurringCount]  = useState<string>(initial?.recurringCount ? String(initial.recurringCount) : "");
   const [isShared,        setIsShared]        = useState(initial?.isShared ?? false);
@@ -41,7 +42,7 @@ export function TransactionModal({ open, onClose, initial }: Props) {
     setDesc(""); setAmount(""); setType("expense");
     setCatId(categories[0]?.id ?? "");
     setAccId(accounts[0]?.id ?? "");
-    setDate(today); setIsRecurring(false); setRecurringPeriod("monthly");
+    setDate(today); setIsRecurring(defaultRecurring ?? false); setRecurringPeriod("monthly");
     setRecurringCount(""); setIsShared(false); setError("");
   }
 

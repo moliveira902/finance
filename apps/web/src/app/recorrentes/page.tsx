@@ -176,7 +176,7 @@ export default function RecorrentesPage() {
         </div>
       )}
 
-      <TransactionModal open={showNew} onClose={() => setShowNew(false)} />
+      <TransactionModal open={showNew} onClose={() => setShowNew(false)} defaultRecurring />
       <TransactionModal open={!!editing} onClose={() => setEditing(null)} initial={editing ?? undefined} />
     </div>
   );

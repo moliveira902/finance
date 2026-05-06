@@ -5,9 +5,20 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "2.0.0";
+export const CURRENT_VERSION = "2.1.0";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "2.1.0",
+    date: "2026-05-06",
+    title: "Seletor de Idioma, Canais de Notificação & Melhorias de UX",
+    items: [
+      "Seletor de idioma (PT / EN) adicionado ao topo direito da tela, ao lado do botão de tema",
+      "Notificações: removidos tipos de alerta de gamificação (resumo semanal, sequência, subida de nível) e de acerto da Casa (acerto mensal, mês fechado, resumo mensal)",
+      "Notificações: cada tipo agora tem seleção de canal independente — Push (Telegram) e/ou Email por notificação",
+      "Recorrentes: ao criar uma nova despesa pela página Recorrentes, a opção de recorrência já vem ativada e o campo de parcelas/meses aparece imediatamente",
+    ],
+  },
   {
     version: "2.0.0",
     date: "2026-05-05",

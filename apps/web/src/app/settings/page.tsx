@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import {
   User, Bell, CreditCard, Download, Shield, Sparkles, Wallet, Check, Tag,
-  Plus, Pencil, Trash2, Users, Link2, Copy, RefreshCw,
+  Plus, Pencil, Trash2, Users, Link2, Copy, RefreshCw, Send, Mail,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -47,6 +47,66 @@ function SettingRow({ label, description, enabled, onChange }: {
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{description}</p>
       </div>
       <Toggle enabled={enabled} onChange={onChange} />
+    </div>
+  );
+}
+
+const REMOVED_NOTIF_TYPES = new Set([
+  "SCORE_WEEKLY_SUMMARY",
+  "STREAK_MILESTONE",
+  "SCORE_LEVEL_UP",
+  "STREAK_BROKEN",
+  "HOUSEHOLD_SETTLEMENT_DUE",
+  "HOUSEHOLD_SETTLEMENT_CLOSED",
+  "HOUSEHOLD_MONTHLY_SUMMARY",
+]);
+
+function NotifTypeRow({
+  label, enabled, channels,
+  onToggle, onChannelToggle,
+}: {
+  label: string;
+  enabled: boolean;
+  channels: { telegram: boolean; email: boolean };
+  onToggle: (v: boolean) => void;
+  onChannelToggle: (ch: "telegram" | "email", v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between py-3.5 border-b border-slate-50 dark:border-slate-700/50 last:border-0 gap-3">
+      <p className="text-sm font-medium text-slate-800 dark:text-slate-200 flex-1 min-w-0">{label}</p>
+      <div className="flex items-center gap-2 shrink-0">
+        {enabled && (
+          <>
+            <button
+              type="button"
+              onClick={() => onChannelToggle("telegram", !channels.telegram)}
+              title="Push (Telegram)"
+              className={cn(
+                "flex items-center gap-1 h-6 px-2 rounded-md text-[11px] font-semibold border transition-colors",
+                channels.telegram
+                  ? "bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-700 text-sky-600 dark:text-sky-400"
+                  : "border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300"
+              )}
+            >
+              <Send size={10} /> Push
+            </button>
+            <button
+              type="button"
+              onClick={() => onChannelToggle("email", !channels.email)}
+              title="Email"
+              className={cn(
+                "flex items-center gap-1 h-6 px-2 rounded-md text-[11px] font-semibold border transition-colors",
+                channels.email
+                  ? "bg-violet-50 dark:bg-violet-950/40 border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-400"
+                  : "border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300"
+              )}
+            >
+              <Mail size={10} /> Email
+            </button>
+          </>
+        )}
+        <Toggle enabled={enabled} onChange={onToggle} />
+      </div>
     </div>
   );
 }
@@ -127,12 +187,6 @@ export default function SettingsPage() {
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 2500);
   }
-
-  // Notification toggles (legacy local)
-  const [emailAlerts,    setEmailAlerts]    = useState(true);
-  const [pushAlerts,     setPushAlerts]     = useState(true);
-  const [weeklyDigest,   setWeeklyDigest]   = useState(false);
-  const [monthlyReport,  setMonthlyReport]  = useState(true);
 
   // Notification prefs (persisted)
   const notifPrefs = useNotificationPrefs();
@@ -796,40 +850,31 @@ export default function SettingsPage() {
                 )}
               </Card>
 
-              {/* Notification type toggles */}
+              {/* Notification type toggles with channel selection */}
               {notifPrefs.data && (
                 <Card>
                   <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{t("settings.notifTypesTitle")}</h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t("settings.notifTypesSub")}</p>
-                  {Object.entries(notifPrefs.data.prefs.types).map(([type, enabled]) => (
-                    <SettingRow
-                      key={type}
-                      label={NOTIF_TYPE_LABELS[type] ?? type}
-                      description=""
-                      enabled={enabled}
-                      onChange={(v) => notifPrefs.update({ types: { [type]: v } })}
-                    />
-                  ))}
+                  {Object.entries(notifPrefs.data.prefs.types)
+                    .filter(([type]) => !REMOVED_NOTIF_TYPES.has(type))
+                    .map(([type, enabled]) => {
+                      const channels = notifPrefs.data!.prefs.typeChannels?.[type] ?? { telegram: true, email: false };
+                      return (
+                        <NotifTypeRow
+                          key={type}
+                          label={NOTIF_TYPE_LABELS[type] ?? type}
+                          enabled={enabled}
+                          channels={channels}
+                          onToggle={(v) => notifPrefs.update({ types: { [type]: v } })}
+                          onChannelToggle={(ch, v) =>
+                            notifPrefs.update({ typeChannels: { [type]: { ...channels, [ch]: v } } })
+                          }
+                        />
+                      );
+                    })
+                  }
                 </Card>
               )}
-
-              {/* Legacy local toggles */}
-              <Card>
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{t("settings.notifLegacyTitle")}</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">{t("settings.notifLegacySub")}</p>
-                <SettingRow label={t("settings.alertsByEmail")}
-                  description={t("settings.alertsByEmailDesc")}
-                  enabled={emailAlerts}   onChange={setEmailAlerts} />
-                <SettingRow label={t("settings.pushAlerts")}
-                  description={t("settings.pushAlertsDesc")}
-                  enabled={pushAlerts}    onChange={setPushAlerts} />
-                <SettingRow label={t("settings.weeklyDigest")}
-                  description={t("settings.weeklyDigestDesc")}
-                  enabled={weeklyDigest}  onChange={setWeeklyDigest} />
-                <SettingRow label={t("settings.monthlyReport")}
-                  description={t("settings.monthlyReportDesc")}
-                  enabled={monthlyReport} onChange={setMonthlyReport} />
-              </Card>
             </>
           )}
 

@@ -118,6 +118,7 @@ export interface NotificationPrefsData {
     quiet_hours_end:   string;
     max_per_day:       number;
     types:             Record<string, boolean>;
+    typeChannels:      Record<string, { telegram: boolean; email: boolean }>;
   };
 }
 
@@ -138,7 +139,7 @@ export function useNotificationPrefs() {
 
   useEffect(() => { refetch(); }, [refetch]);
 
-  const update = useCallback((patch: { types?: Record<string, boolean>; telegram_enabled?: boolean; email_enabled?: boolean }) => {
+  const update = useCallback((patch: { types?: Record<string, boolean>; typeChannels?: Record<string, { telegram: boolean; email: boolean }>; telegram_enabled?: boolean; email_enabled?: boolean }) => {
     fetch("/api/notifications/preferences", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
