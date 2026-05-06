@@ -15,32 +15,33 @@ export function Topbar() {
   const { language, setLanguage } = useTranslation();
 
   return (
-    <div className="sticky top-0 z-20 flex items-center gap-3 px-5 h-12 border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shrink-0">
-      {/* Viewport toggle */}
-      <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">
+    <div className="sticky top-0 z-20 flex items-center gap-2 px-4 h-12 border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shrink-0 min-w-0">
+      {/* Viewport toggle — icon+label on wide, icon-only on narrow */}
+      <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5 shrink-0">
         {VIEWPORTS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setViewport(id)}
+            title={label}
             className={cn(
-              "flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium transition-all",
+              "flex items-center gap-1.5 h-7 rounded-md text-xs font-medium transition-all px-2 sm:px-3",
               viewport === id
                 ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
                 : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
             )}
           >
             <Icon size={12} />
-            {label}
+            <span className="hidden sm:inline">{label}</span>
           </button>
         ))}
       </div>
 
-      <div className="flex-1" />
+      <div className="flex-1 min-w-0" />
 
       <NotificationBell />
 
       {/* Language toggle */}
-      <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">
+      <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5 shrink-0">
         {(["pt", "en"] as const).map((lang) => (
           <button
             key={lang}
@@ -57,21 +58,21 @@ export function Topbar() {
         ))}
       </div>
 
-      {/* Dark / light toggle */}
+      {/* Dark / light toggle — icon+label on wide, icon-only on narrow */}
       <button
         onClick={toggleTheme}
         aria-label="Toggle dark mode"
         className={cn(
-          "flex items-center gap-1.5 h-7 px-3 rounded-lg border text-xs font-medium transition-colors",
+          "flex items-center gap-1.5 h-7 px-2.5 rounded-lg border text-xs font-medium transition-colors shrink-0",
           "border-slate-200 dark:border-slate-700",
           "text-slate-500 dark:text-slate-400",
           "hover:bg-slate-50 dark:hover:bg-slate-800"
         )}
       >
         {theme === "light" ? (
-          <><Moon size={13} /> {language === "en" ? "Dark" : "Escuro"}</>
+          <><Moon size={13} /><span className="hidden sm:inline">{language === "en" ? "Dark" : "Escuro"}</span></>
         ) : (
-          <><Sun size={13} /> {language === "en" ? "Light" : "Claro"}</>
+          <><Sun size={13} /><span className="hidden sm:inline">{language === "en" ? "Light" : "Claro"}</span></>
         )}
       </button>
     </div>

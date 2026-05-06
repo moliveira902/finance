@@ -1,5 +1,20 @@
 # FinanceApp — Release Notes
 
+## v2.1.0 — 2026-05-06
+
+### Language Toggle, Notification Channels & UX Polish
+
+- **Language selector in topbar**: PT / EN toggle added to the top-right bar (next to the theme button), visible on all desktop/preview screens — no longer requires going into Settings
+- **Topbar responsive**: viewport and theme buttons collapse to icon-only on narrow widths (≤640 px) to prevent overflow
+- **Notifications — removed types**: seven low-value notification types removed entirely (weekly score summary, streak milestone, level-up, streak broken, monthly household settlement, closed household month, household monthly summary)
+- **Notifications — per-type channel selector**: each remaining notification type shows independent Push (Telegram) and Email icon-buttons; channels can be toggled independently per event type
+- **Recorrentes — installment count always visible**: every recurring card now shows the installment/months count in the metadata row (e.g. "12 meses" or "Contínuo"); entries without a fixed count show "Contínuo"
+- **Recorrentes — total commitment row**: when a count is set, a highlighted row below the amount grid shows the full commitment total (N × value)
+- **Recorrentes — modal pre-fills recurring**: opening "Nova Recorrente" from the Recorrentes page starts with the recurring toggle already on and the period/months fields immediately visible
+- **Mobile card grid**: recurring card amount grid changed from 3-column to 2-column for better readability on narrow screens
+
+---
+
 ## v1.8.0 — 2026-05-04
 
 ### Origem de Transações & Melhorias Mobile

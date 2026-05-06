@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { RepeatIcon, Plus, Pencil, Trash2, TrendingDown, TrendingUp, CalendarDays } from "lucide-react";
+import { RepeatIcon, Plus, Pencil, Trash2, TrendingDown, TrendingUp, CalendarDays, Hash } from "lucide-react";
 import { Card, CardLabel, CardValue } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -107,19 +107,27 @@ export default function RecorrentesPage() {
                     <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 flex items-center justify-center text-xl shrink-0">
                       {tx.category.icon}
                     </div>
-                    <div>
-                      <p className="font-semibold text-slate-900 dark:text-white text-sm">{tx.description}</p>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900 dark:text-white text-sm truncate">{tx.description}</p>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
                           <CalendarDays size={10} />
                           {tx.recurringPeriod === "yearly" ? t("recurring.yearly") : t("recurring.monthly")}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
+                          <Hash size={10} />
+                          {tx.recurringCount && tx.recurringCount > 0
+                            ? `${tx.recurringCount} ${tx.recurringPeriod === "yearly"
+                                ? (tx.recurringCount === 1 ? t("recurring.year") : t("recurring.years"))
+                                : (tx.recurringCount === 1 ? t("recurring.month") : t("recurring.months"))}`
+                            : t("recurring.indefinite")}
                         </span>
                         <span className="text-xs text-slate-300 dark:text-slate-600">·</span>
                         <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
                           style={{ background: tx.category.color + "20", color: tx.category.color }}>
                           {tx.category.name}
                         </span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500">{tx.account.name}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-[80px]">{tx.account.name}</span>
                       </div>
                     </div>
                   </div>
@@ -137,7 +145,7 @@ export default function RecorrentesPage() {
                 </div>
 
                 {/* Amount breakdown */}
-                <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-slate-50 dark:border-slate-700/50">
+                <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-50 dark:border-slate-700/50">
                   <div>
                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{t("recurring.perPeriod")}</p>
                     <span className={cn(
@@ -159,17 +167,18 @@ export default function RecorrentesPage() {
                       {tx.recurringPeriod === "yearly" ? formatBRL(monthly) : formatBRL(annual)}
                     </span>
                   </div>
-                  {tx.recurringCount && tx.recurringCount > 0 && (
-                    <div>
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">
-                        {t("recurring.totalLabel", { n: String(tx.recurringCount), period: tx.recurringPeriod === "yearly" ? t("recurring.years") : t("recurring.months") })}
-                      </p>
-                      <span className="text-sm font-bold tabular-nums text-sky-600 dark:text-sky-400">
-                        {formatBRL(Math.abs(tx.amount) * tx.recurringCount)}
-                      </span>
-                    </div>
-                  )}
                 </div>
+                {/* Total commitment row — shown when installment count is set */}
+                {tx.recurringCount && tx.recurringCount > 0 && (
+                  <div className="flex items-center justify-between mt-2.5 px-3 py-2 rounded-lg bg-sky-50/60 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-900/40">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {t("recurring.totalLabel", { n: String(tx.recurringCount), period: tx.recurringPeriod === "yearly" ? t("recurring.years") : t("recurring.months") })}
+                    </span>
+                    <span className="text-sm font-bold tabular-nums text-sky-700 dark:text-sky-300">
+                      {formatBRL(Math.abs(tx.amount) * tx.recurringCount)}
+                    </span>
+                  </div>
+                )}
               </Card>
             );
           })}

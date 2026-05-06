@@ -72,39 +72,40 @@ function NotifTypeRow({
   onChannelToggle: (ch: "telegram" | "email", v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between py-3.5 border-b border-slate-50 dark:border-slate-700/50 last:border-0 gap-3">
-      <p className="text-sm font-medium text-slate-800 dark:text-slate-200 flex-1 min-w-0">{label}</p>
-      <div className="flex items-center gap-2 shrink-0">
-        {enabled && (
-          <>
-            <button
-              type="button"
-              onClick={() => onChannelToggle("telegram", !channels.telegram)}
-              title="Push (Telegram)"
-              className={cn(
-                "flex items-center gap-1 h-6 px-2 rounded-md text-[11px] font-semibold border transition-colors",
-                channels.telegram
-                  ? "bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-700 text-sky-600 dark:text-sky-400"
-                  : "border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300"
-              )}
-            >
-              <Send size={10} /> Push
-            </button>
-            <button
-              type="button"
-              onClick={() => onChannelToggle("email", !channels.email)}
-              title="Email"
-              className={cn(
-                "flex items-center gap-1 h-6 px-2 rounded-md text-[11px] font-semibold border transition-colors",
-                channels.email
-                  ? "bg-violet-50 dark:bg-violet-950/40 border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-400"
-                  : "border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300"
-              )}
-            >
-              <Mail size={10} /> Email
-            </button>
-          </>
-        )}
+    <div className="flex items-center justify-between py-3 border-b border-slate-50 dark:border-slate-700/50 last:border-0 gap-2">
+      <p className="text-sm font-medium text-slate-800 dark:text-slate-200 flex-1 min-w-0 leading-snug">{label}</p>
+      <div className="flex items-center gap-1.5 shrink-0">
+        {/* Channel buttons — always shown, dimmed when notification is disabled */}
+        <button
+          type="button"
+          onClick={() => enabled && onChannelToggle("telegram", !channels.telegram)}
+          title="Push (Telegram)"
+          disabled={!enabled}
+          className={cn(
+            "w-7 h-7 rounded-md flex items-center justify-center border transition-colors",
+            enabled && channels.telegram
+              ? "bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-700 text-sky-600 dark:text-sky-400"
+              : "border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600",
+            enabled && "hover:border-sky-300 dark:hover:border-sky-700 cursor-pointer"
+          )}
+        >
+          <Send size={11} />
+        </button>
+        <button
+          type="button"
+          onClick={() => enabled && onChannelToggle("email", !channels.email)}
+          title="Email"
+          disabled={!enabled}
+          className={cn(
+            "w-7 h-7 rounded-md flex items-center justify-center border transition-colors",
+            enabled && channels.email
+              ? "bg-violet-50 dark:bg-violet-950/40 border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-400"
+              : "border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600",
+            enabled && "hover:border-violet-300 dark:hover:border-violet-700 cursor-pointer"
+          )}
+        >
+          <Mail size={11} />
+        </button>
         <Toggle enabled={enabled} onChange={onToggle} />
       </div>
     </div>
