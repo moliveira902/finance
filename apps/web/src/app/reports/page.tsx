@@ -12,6 +12,7 @@ import { useFinanceStore } from "@/stores/financeStore";
 import { formatBRL, type Transaction } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CombinedTransaction } from "@/app/api/household/report/route";
+import { useTranslation } from "@/contexts/LanguageContext";
 
 // ── Recharts helpers ──────────────────────────────────────────────────────────
 
@@ -32,14 +33,14 @@ function kFormatter(v: unknown): string {
 
 type TxLike = Pick<Transaction, "date" | "type" | "amount" | "category">;
 
-function buildMonthlyTrend(txs: TxLike[]) {
+function buildMonthlyTrend(txs: TxLike[], locale: string) {
   return Array.from({ length: 6 }, (_, i) => {
     const now = new Date();
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
     const y = d.getFullYear(), m = d.getMonth();
-    const month = d.toLocaleString("pt-BR", { month: "short" });
+    const month = d.toLocaleString(locale, { month: "short" });
     const label = month.charAt(0).toUpperCase() + month.slice(1);
-    const full  = d.toLocaleString("pt-BR", { month: "long", year: "numeric" });
+    const full  = d.toLocaleString(locale, { month: "long", year: "numeric" });
     const pts = txs.filter((t) => {
       const td = new Date(t.date);
       return td.getFullYear() === y && td.getMonth() === m;
@@ -112,6 +113,7 @@ type ViewMode = "personal" | "household";
 
 export default function ReportsPage() {
   const { transactions: personalTxns } = useFinanceStore();
+  const { t, locale } = useTranslation();
 
   const [selectedIdx,       setSelectedIdx]       = useState(5);
   const [viewMode,          setViewMode]          = useState<ViewMode>("personal");
@@ -149,7 +151,7 @@ export default function ReportsPage() {
   // Active transactions for this view
   const activeTxns: TxLike[] = viewMode === "household" ? combinedTxns : personalTxns;
 
-  const trend     = buildMonthlyTrend(activeTxns);
+  const trend     = buildMonthlyTrend(activeTxns, locale);
   const isAllTime = selectedIdx === -1;
   const selected  = isAllTime ? null : trend[selectedIdx];
   const prev      = !isAllTime && selectedIdx > 0 ? trend[selectedIdx - 1] : null;
@@ -184,9 +186,9 @@ export default function ReportsPage() {
     ? ((selected!.expenses - prev.expenses) / prev.expenses) * 100 : 0;
 
   const periodLabel = isAllTime
-    ? "Todos os períodos"
+    ? t("reports.allPeriods")
     : selected!.fullLabel.charAt(0).toUpperCase() + selected!.fullLabel.slice(1);
-  const monthLabel = isAllTime ? "Total" : selected!.month;
+  const monthLabel = isAllTime ? t("common.total") : selected!.month;
 
   const ownerColor  = "#0ea5e9"; // sky-500
   const memberColor = "#8b5cf6"; // violet-500
@@ -206,8 +208,8 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Relatórios"
-        subtitle="Análise financeira detalhada"
+        title={t("reports.title")}
+        subtitle={t("reports.subtitle")}
         actions={
           <>
             {/* View mode toggle — always visible; disabled when no household */}
@@ -230,7 +232,7 @@ export default function ReportsPage() {
                   !household && "cursor-not-allowed"
                 )}
               >
-                <User size={12} /> Minha conta
+                <User size={12} /> {t("reports.myAccount")}
               </button>
               <button
                 onClick={() => household && setViewMode("household")}
@@ -244,7 +246,7 @@ export default function ReportsPage() {
                   !household && "cursor-not-allowed"
                 )}
               >
-                <Users size={12} /> Visão do casal
+                <Users size={12} /> {t("reports.coupleView")}
               </button>
             </div>
 
@@ -255,7 +257,7 @@ export default function ReportsPage() {
                 onChange={(e) => setSelectedIdx(Number(e.target.value))}
                 className="h-9 pl-3 pr-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200 focus:outline-none appearance-none cursor-pointer"
               >
-                <option value={-1}>Todos os períodos</option>
+                <option value={-1}>{t("reports.allPeriods")}</option>
                 {trend.map((t, i) => (
                   <option key={i} value={i}>
                     {t.fullLabel.charAt(0).toUpperCase() + t.fullLabel.slice(1)}
@@ -265,7 +267,7 @@ export default function ReportsPage() {
               <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
 
-            <Button size="sm"><Download size={14} /> Exportar PDF</Button>
+            <Button size="sm"><Download size={14} /> {t("reports.exportPdf")}</Button>
           </>
         }
       />
@@ -275,24 +277,26 @@ export default function ReportsPage() {
         <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/50 text-sm text-sky-700 dark:text-sky-300">
           <Users size={14} className="text-sky-500 shrink-0" />
           <span>
-            Visão combinada de{" "}
-            <span className="font-semibold" style={{ color: ownerColor }}>{household.ownerName}</span>
-            {" "}e{" "}
-            <span className="font-semibold" style={{ color: memberColor }}>{household.memberName}</span>
-            {" "}— todas as transações de ambas as contas.
+            {t("reports.coupleNote", { owner: "%%OWNER%%", member: "%%MEMBER%%" })
+              .split(/%%OWNER%%|%%MEMBER%%/)
+              .map((part, i) => {
+                if (i === 1) return <span key={i} className="font-semibold" style={{ color: ownerColor }}>{household.ownerName}</span>;
+                if (i === 2) return <span key={i} className="font-semibold" style={{ color: memberColor }}>{household.memberName}</span>;
+                return part;
+              })}
           </span>
         </div>
       )}
 
       {loadingHH && (
-        <p className="text-sm text-slate-400 text-center py-4">Carregando dados do casal…</p>
+        <p className="text-sm text-slate-400 text-center py-4">{t("reports.loadingCouple")}</p>
       )}
 
       {/* KPIs */}
       <div className="grid grid-cols-1 @sm:grid-cols-3 gap-4">
         <Card className="py-4">
           <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Receitas ({monthLabel})
+            {t("reports.income")} ({monthLabel})
           </p>
           <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
             {formatBRL(kpiIncome)}
@@ -301,13 +305,13 @@ export default function ReportsPage() {
             <p className={cn("flex items-center gap-1 text-xs mt-2 font-medium",
               incDelta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400")}>
               {incDelta >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-              {Math.abs(incDelta).toFixed(1)}% vs mês anterior
+              {Math.abs(incDelta).toFixed(1)}% {t("reports.vsPrev")}
             </p>
           )}
         </Card>
         <Card className="py-4">
           <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Despesas ({monthLabel})
+            {t("reports.expenses")} ({monthLabel})
           </p>
           <p className="text-xl font-bold text-red-500 dark:text-red-400 mt-1 tabular-nums">
             {formatBRL(kpiExpenses)}
@@ -316,13 +320,13 @@ export default function ReportsPage() {
             <p className={cn("flex items-center gap-1 text-xs mt-2 font-medium",
               expDelta <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400")}>
               {expDelta <= 0 ? <TrendingDown size={11} /> : <TrendingUp size={11} />}
-              {Math.abs(expDelta).toFixed(1)}% vs mês anterior
+              {Math.abs(expDelta).toFixed(1)}% {t("reports.vsPrev")}
             </p>
           )}
         </Card>
         <Card className="py-4">
           <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-            Economia ({monthLabel})
+            {t("reports.savings")} ({monthLabel})
           </p>
           <p className={cn("text-xl font-bold mt-1 tabular-nums",
             savings >= 0 ? "text-slate-900 dark:text-white" : "text-red-500 dark:text-red-400")}>
@@ -330,7 +334,7 @@ export default function ReportsPage() {
           </p>
           {kpiIncome > 0 && (
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-              {Math.round((savings / kpiIncome) * 100)}% da receita {viewMode === "household" ? "combinada" : isAllTime ? "total" : "mensal"}
+              {Math.round((savings / kpiIncome) * 100)}% {t("reports.pctRevenue", { type: viewMode === "household" ? t("reports.revCombined") : isAllTime ? t("reports.revTotal") : t("reports.revMonthly") })}
             </p>
           )}
         </Card>
@@ -341,9 +345,9 @@ export default function ReportsPage() {
         {/* 6-month bar chart */}
         <Card>
           <CardLabel className="mb-4">
-            Receitas vs Despesas — 6 meses
+            {t("reports.cashFlow")}
             {viewMode === "household" && (
-              <span className="ml-2 text-[10px] font-normal text-sky-500">(casal)</span>
+              <span className="ml-2 text-[10px] font-normal text-sky-500">{t("reports.coupleTag")}</span>
             )}
           </CardLabel>
           <div className="h-60">
@@ -354,8 +358,8 @@ export default function ReportsPage() {
                 <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={kFormatter} />
                 <Tooltip contentStyle={TOOLTIP_STYLE} formatter={brlFormatter} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
-                <Bar dataKey="income"   name="Receitas" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expenses" name="Despesas" fill="#f87171" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="income"   name={t("common.income")}   fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expenses" name={t("common.expenses")} fill="#f87171" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -364,13 +368,13 @@ export default function ReportsPage() {
         {/* Pie chart */}
         <Card>
           <CardLabel className="mb-4">
-            Distribuição de Gastos — {monthLabel}
+            {t("reports.distribution")} — {monthLabel}
             {viewMode === "household" && (
-              <span className="ml-2 text-[10px] font-normal text-sky-500">(casal)</span>
+              <span className="ml-2 text-[10px] font-normal text-sky-500">{t("reports.coupleTag")}</span>
             )}
           </CardLabel>
           {catBreakdown.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-16">Sem despesas neste período.</p>
+            <p className="text-sm text-slate-400 text-center py-16">{t("reports.noExpenses")}</p>
           ) : (
             <div className="h-60">
               <ResponsiveContainer width="100%" height="100%">
@@ -392,16 +396,16 @@ export default function ReportsPage() {
       {viewMode === "personal" && (
         <Card>
           <CardLabel className="mb-5">
-            Detalhamento por Categoria — {periodLabel}
+            {t("reports.breakdown")} — {periodLabel}
           </CardLabel>
           {catBreakdown.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-8">Sem despesas neste período.</p>
+            <p className="text-sm text-slate-400 text-center py-8">{t("reports.noExpenses")}</p>
           ) : (
             <div>
               <div className="grid grid-cols-[1fr_auto_auto_auto] pb-2.5 border-b border-slate-100 dark:border-slate-700 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                <span>Categoria</span>
-                <span className="text-right pr-4 hidden @2xl:block">% do total</span>
-                <span className="text-right pr-4">Total</span>
+                <span>{t("reports.category")}</span>
+                <span className="text-right pr-4 hidden @2xl:block">{t("reports.pctOfTotal")}</span>
+                <span className="text-right pr-4">{t("reports.total")}</span>
                 <span />
               </div>
               {catBreakdown.map((c) => {
@@ -429,7 +433,7 @@ export default function ReportsPage() {
                     {isOpen && (
                       <div className="pb-3 pl-4 space-y-1">
                         {txns.length === 0 ? (
-                          <p className="text-xs text-slate-400 py-2">Sem transações.</p>
+                          <p className="text-xs text-slate-400 py-2">{t("reports.noTxnsExpanded")}</p>
                         ) : txns.map((tx) => {
                           const t = tx as Transaction;
                           return (
@@ -438,7 +442,7 @@ export default function ReportsPage() {
                                 <span className="text-base leading-none shrink-0">{t.category.icon}</span>
                                 <div className="min-w-0">
                                   <p className="text-sm text-slate-700 dark:text-slate-300 truncate">{t.description}</p>
-                                  <p className="text-[11px] text-slate-400">{new Date(t.date).toLocaleDateString("pt-BR")}</p>
+                                  <p className="text-[11px] text-slate-400">{new Date(t.date).toLocaleDateString(locale)}</p>
                                 </div>
                               </div>
                               <span className="text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200 shrink-0 ml-4">
@@ -461,19 +465,19 @@ export default function ReportsPage() {
       {viewMode === "household" && household && (
         <Card>
           <CardLabel className="mb-5 flex items-center gap-2">
-            Detalhamento por Categoria — {periodLabel}
-            <span className="text-[10px] font-normal text-sky-500">(casal)</span>
+            {t("reports.breakdown")} — {periodLabel}
+            <span className="text-[10px] font-normal text-sky-500">{t("reports.coupleTag")}</span>
           </CardLabel>
           {combinedCatBreakdown.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-8">Sem despesas neste período.</p>
+            <p className="text-sm text-slate-400 text-center py-8">{t("reports.noExpenses")}</p>
           ) : (
             <div>
               {/* Header */}
               <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 pb-2.5 border-b border-slate-100 dark:border-slate-700 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                <span>Categoria</span>
+                <span>{t("reports.category")}</span>
                 <span className="text-right" style={{ color: ownerColor }}>{household.ownerName}</span>
                 <span className="text-right" style={{ color: memberColor }}>{household.memberName}</span>
-                <span className="text-right">Total</span>
+                <span className="text-right">{t("reports.total")}</span>
               </div>
 
               {combinedCatBreakdown.map((c) => {
@@ -523,7 +527,7 @@ export default function ReportsPage() {
                     {isOpen && (
                       <div className="pb-3 pl-4 space-y-1">
                         {txns.length === 0 ? (
-                          <p className="text-xs text-slate-400 py-2">Sem transações.</p>
+                          <p className="text-xs text-slate-400 py-2">{t("reports.noTxnsExpanded")}</p>
                         ) : txns.map((tx) => (
                           <div key={`${tx.paidByUserId}-${tx.id}`}
                             className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
@@ -536,7 +540,7 @@ export default function ReportsPage() {
                                   <span style={{ color: tx.paidByUserId === household.ownerUserId ? ownerColor : memberColor }}>
                                     {tx.paidByName}
                                   </span>
-                                  {" · "}{new Date(tx.date).toLocaleDateString("pt-BR")}
+                                  {" · "}{new Date(tx.date).toLocaleDateString(locale)}
                                 </p>
                               </div>
                             </div>
@@ -559,8 +563,8 @@ export default function ReportsPage() {
       {viewMode === "household" && household && (
         <Card>
           <CardLabel className="mb-4">
-            Todas as transações — {periodLabel}
-            <span className="ml-2 text-[10px] font-normal text-sky-500">(casal)</span>
+            {t("reports.allTransactions")} — {periodLabel}
+            <span className="ml-2 text-[10px] font-normal text-sky-500">{t("reports.coupleTag")}</span>
           </CardLabel>
           {(() => {
             const monthTxns = isAllTime
@@ -570,7 +574,7 @@ export default function ReportsPage() {
                   return td.getFullYear() === selected!.year && td.getMonth() === selected!.monthIndex;
                 });
             if (monthTxns.length === 0) {
-              return <p className="text-sm text-slate-400 text-center py-6">Sem transações neste período.</p>;
+              return <p className="text-sm text-slate-400 text-center py-6">{t("reports.noTxns")}</p>;
             }
             return (
               <div className="space-y-1">
@@ -589,10 +593,10 @@ export default function ReportsPage() {
                       <p className="text-[11px] text-slate-400">
                         {tx.category.name} · <span style={{ color: tx.paidByUserId === household.ownerUserId ? ownerColor : memberColor }}>
                           {tx.paidByName}
-                        </span> · {new Date(tx.date).toLocaleDateString("pt-BR")}
+                        </span> · {new Date(tx.date).toLocaleDateString(locale)}
                         {tx.isShared && (
                           <span className="ml-1.5 text-[10px] bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded-full">
-                            compartilhada
+                            {t("reports.shared")}
                           </span>
                         )}
                       </p>

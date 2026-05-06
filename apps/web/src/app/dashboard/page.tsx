@@ -12,6 +12,7 @@ import { ScoreWidget } from "@/components/dashboard/ScoreWidget";
 import { useFinanceStore } from "@/stores/financeStore";
 import { formatBRL, formatDate, type Transaction } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/contexts/LanguageContext";
 
 function KpiCard({ label, value, sub, positive }: {
   label: string; value: string; sub: string; positive?: boolean;
@@ -47,16 +48,12 @@ function kFormatter(v: unknown): string {
   return `R$${(Number(v || 0) / 1000).toFixed(0)}k`;
 }
 
-function currentMonthLabel() {
-  return new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-}
-
-function buildMonthlyTrend(txs: Transaction[]) {
+function buildMonthlyTrend(txs: Transaction[], locale: string) {
   return Array.from({ length: 6 }, (_, i) => {
     const now = new Date();
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
     const y = d.getFullYear(), m = d.getMonth();
-    const month = d.toLocaleString("pt-BR", { month: "short" });
+    const month = d.toLocaleString(locale, { month: "short" });
     const label = month.charAt(0).toUpperCase() + month.slice(1);
     const periodTxs = txs.filter((t) => {
       const td = new Date(t.date);
@@ -80,7 +77,6 @@ function buildUpcomingRecurring(all: Transaction[]) {
       const key = t.description.toLowerCase();
       if (seen.has(key)) return false;
       seen.add(key);
-      // due = no other occurrence found in current period
       if (t.recurringPeriod === "yearly") {
         return !all.some((o) => {
           if (o.id === t.id) return false;
@@ -126,6 +122,7 @@ function monthlyRecurringNet(txs: Transaction[]): number {
 
 export default function DashboardPage() {
   const { transactions, accounts, appSettings } = useFinanceStore();
+  const { t, locale } = useTranslation();
 
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
@@ -134,28 +131,30 @@ export default function DashboardPage() {
     return d.getFullYear() === y && d.getMonth() === m;
   });
 
+  const monthLabel = now.toLocaleDateString(locale, { month: "long", year: "numeric" });
+
   const totalAssets  = accounts.reduce((s, a) => s + Math.max(0, a.balance), 0);
   const totalDebt    = accounts.reduce((s, a) => s + Math.max(0, -a.balance), 0);
   const netWorth     = totalAssets - totalDebt;
-  const income       = monthTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
-  const expenses     = Math.abs(monthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0));
+  const income       = monthTxs.filter((tx) => tx.type === "income").reduce((s, tx) => s + tx.amount, 0);
+  const expenses     = Math.abs(monthTxs.filter((tx) => tx.type === "expense").reduce((s, tx) => s + tx.amount, 0));
   const monthlyFixedNet = monthlyRecurringNet(transactions);
   const recent            = [...transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-  const monthlyTrend      = buildMonthlyTrend(transactions);
+  const monthlyTrend      = buildMonthlyTrend(transactions, locale);
   const catBreakdown      = buildCategoryBreakdown(monthTxs);
   const upcomingRecurring = buildUpcomingRecurring(transactions);
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" subtitle={`Visão geral das suas finanças — ${currentMonthLabel()}`} />
+      <PageHeader title={t("dashboard.title")} subtitle={t("dashboard.subtitle", { month: monthLabel })} />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 @3xl:grid-cols-4 gap-4">
-        <KpiCard label="Patrimônio Líquido" value={formatBRL(netWorth)}
-          sub={`Fixos/mês: ${monthlyFixedNet >= 0 ? "+" : "−"}${formatBRL(Math.abs(monthlyFixedNet))}`} />
-        <KpiCard label="Receitas do mês"     value={formatBRL(income)}        sub="Salário + freelance"       />
-        <KpiCard label="Despesas do mês"     value={formatBRL(expenses)}      sub="Total de saídas"           positive={expenses < income} />
-        <KpiCard label="Saldo Livre"         value={formatBRL(income - expenses)} sub="Disponível para investir" positive={income - expenses > 0} />
+        <KpiCard label={t("dashboard.netWorth")} value={formatBRL(netWorth)}
+          sub={t("dashboard.netWorthSub", { sign: monthlyFixedNet >= 0 ? "+" : "−", value: formatBRL(Math.abs(monthlyFixedNet)) })} />
+        <KpiCard label={t("dashboard.monthlyIncome")}   value={formatBRL(income)}        sub={t("dashboard.incomeSub")}    />
+        <KpiCard label={t("dashboard.monthlyExpenses")} value={formatBRL(expenses)}      sub={t("dashboard.expensesSub")}  positive={expenses < income} />
+        <KpiCard label={t("dashboard.freeBalance")}     value={formatBRL(income - expenses)} sub={t("dashboard.freeBalanceSub")} positive={income - expenses > 0} />
       </div>
 
       {/* Health Score widget — shown only when feature is enabled */}
@@ -164,7 +163,7 @@ export default function DashboardPage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-4">
         <Card className="@3xl:col-span-2">
-          <CardLabel className="mb-4">Fluxo de Caixa — 6 meses</CardLabel>
+          <CardLabel className="mb-4">{t("dashboard.cashFlow")}</CardLabel>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={monthlyTrend} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
@@ -183,17 +182,17 @@ export default function DashboardPage() {
                 <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
                   tickFormatter={kFormatter} />
                 <Tooltip contentStyle={TOOLTIP} formatter={brlFormatter} />
-                <Area type="monotone" dataKey="income"   stroke="#10b981" strokeWidth={2} fill="url(#gI)" name="Receitas" />
-                <Area type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} fill="url(#gE)" name="Despesas" />
+                <Area type="monotone" dataKey="income"   stroke="#10b981" strokeWidth={2} fill="url(#gI)" name={t("common.income")} />
+                <Area type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} fill="url(#gE)" name={t("common.expenses")} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
         <Card>
-          <CardLabel className="mb-4">Gastos por Categoria</CardLabel>
+          <CardLabel className="mb-4">{t("dashboard.byCategory")}</CardLabel>
           {catBreakdown.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-8">Sem despesas neste mês.</p>
+            <p className="text-sm text-slate-400 text-center py-8">{t("dashboard.noExpenses")}</p>
           ) : (
             <>
               <div className="flex justify-center">
@@ -227,7 +226,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <Clock size={14} className="text-amber-500" />
               <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Recorrentes em aberto este mês
+                {t("dashboard.openRecurring")}
               </span>
               <span className="text-xs font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
                 {upcomingRecurring.length}
@@ -235,7 +234,7 @@ export default function DashboardPage() {
             </div>
             <Link href="/recorrentes"
               className="flex items-center gap-1 text-xs text-sky-500 hover:text-sky-600 font-medium transition-colors">
-              Ver todas <ArrowUpRight size={12} />
+              {t("common.viewAll")} <ArrowUpRight size={12} />
             </Link>
           </div>
           <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
@@ -247,7 +246,7 @@ export default function DashboardPage() {
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{tx.description}</p>
                     <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
                       <RepeatIcon size={9} />
-                      {tx.recurringPeriod === "yearly" ? "Anual" : "Mensal"}
+                      {tx.recurringPeriod === "yearly" ? t("dashboard.recYearly") : t("dashboard.recMonthly")}
                     </span>
                   </div>
                 </div>
@@ -264,7 +263,7 @@ export default function DashboardPage() {
       {/* Accounts + Recent */}
       <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-4">
         <Card>
-          <CardLabel className="mb-4">Contas</CardLabel>
+          <CardLabel className="mb-4">{t("dashboard.accounts")}</CardLabel>
           <div className="space-y-3">
             {accounts.map((acc) => (
               <div key={acc.id} className="flex items-center gap-3">
@@ -288,14 +287,14 @@ export default function DashboardPage() {
 
         <Card className="@3xl:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <CardLabel>Transações Recentes</CardLabel>
+            <CardLabel>{t("dashboard.recentTxns")}</CardLabel>
             <Link href="/transactions"
               className="flex items-center gap-1 text-xs text-sky-500 hover:text-sky-600 font-medium transition-colors">
-              Ver todas <ArrowUpRight size={12} />
+              {t("common.viewAll")} <ArrowUpRight size={12} />
             </Link>
           </div>
           {recent.length === 0 ? (
-            <p className="text-sm text-slate-400 py-4 text-center">Nenhuma transação ainda.</p>
+            <p className="text-sm text-slate-400 py-4 text-center">{t("dashboard.noTxns")}</p>
           ) : (
             <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
               {recent.map((tx) => (

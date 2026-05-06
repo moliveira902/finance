@@ -5,6 +5,7 @@ import { MobileFrame, RealMobileLayout } from "./MobileFrame";
 import { useAppContext }     from "@/contexts/AppContext";
 import { useIngestPoller }   from "@/hooks/useIngestPoller";
 import { useStoreSync }      from "@/hooks/useStoreSync";
+import { LanguageProvider }  from "@/contexts/LanguageContext";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { viewport, isSmallScreen } = useAppContext();
@@ -18,6 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isMobile        = onRealPhone || onMobilePreview;
 
   return (
+    <LanguageProvider>
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">
       {/* Sidebar — desktop only */}
       {!isMobile && <Sidebar />}
@@ -45,5 +47,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       </div>
     </div>
+    </LanguageProvider>
   );
 }

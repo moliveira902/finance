@@ -25,6 +25,7 @@ export type Transaction = {
 };
 export interface AppSettings {
   healthScoreEnabled: boolean;
+  language?: "pt" | "en";
 }
 
 export interface StoreData {
@@ -129,6 +130,7 @@ export async function getStore(userId: string): Promise<StoreData> {
     categories:   raw.categories?.length ? raw.categories : DEFAULT_CATEGORIES,
     profile:      raw.profile      ?? { name: "", email: "" },
     members:      raw.members      ?? [],
+    appSettings:  raw.appSettings,
   };
 }
 

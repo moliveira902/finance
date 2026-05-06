@@ -15,19 +15,9 @@ import { cn } from "@/lib/utils";
 import type { Account, Category, Member } from "@/lib/mock-data";
 import type { Household } from "@/lib/household";
 import { useNotificationPrefs } from "@/hooks/useHealthScore";
+import { useTranslation } from "@/contexts/LanguageContext";
 
 type Tab = "profile" | "members" | "accounts" | "categories" | "notifications" | "ai" | "integrations" | "data";
-
-const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: "profile",       label: "Perfil",            icon: User       },
-  { id: "members",       label: "Membros",            icon: Users      },
-  { id: "accounts",      label: "Contas",             icon: CreditCard },
-  { id: "categories",    label: "Categorias",         icon: Tag        },
-  { id: "notifications", label: "Notificações",       icon: Bell       },
-  { id: "ai",            label: "Inteligência Artificial", icon: Sparkles },
-  { id: "integrations",  label: "Integrações",        icon: Link2      },
-  { id: "data",          label: "Dados e Privacidade", icon: Shield    },
-];
 
 function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -68,33 +58,7 @@ function nameInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-const ACCOUNT_LABELS: Record<string, string> = {
-  checking: "Conta Corrente", savings: "Poupança",
-  credit: "Crédito",         investment: "Investimentos",
-};
 const SYSTEM_IDS = new Set(["1","2","3","4","5","6","7","8","9","10"]);
-
-const NOTIF_TYPE_LABELS: Record<string, string> = {
-  SCORE_WEEKLY_SUMMARY:        "Resumo semanal de pontuação",
-  SCORE_LEVEL_UP:              "Subida de nível",
-  STREAK_MILESTONE:            "Marco de sequência",
-  STREAK_BROKEN:               "Sequência interrompida",
-  BADGE_EARNED:                "Nova conquista",
-  BUDGET_ALERT_80:             "Orçamento 80% atingido",
-  BUDGET_ALERT_EXCEEDED:       "Orçamento estourado",
-  BUDGET_MONTHLY_REVIEW:       "Fechamento mensal de orçamentos",
-  MONTHLY_REPORT_READY:        "Relatório mensal pronto",
-  SAVINGS_POSITIVE:            "Economia positiva (dia 25)",
-  LOW_BALANCE_WARNING:         "Saldo baixo",
-  SUBSCRIPTION_DETECTED:       "Nova assinatura detectada",
-  SUBSCRIPTION_UNUSED:         "Assinatura não utilizada",
-  HOUSEHOLD_EXPENSE_SHARED:    "Gasto compartilhado na Casa",
-  HOUSEHOLD_BUDGET_ALERT:      "Orçamento da Casa atingido",
-  HOUSEHOLD_SETTLEMENT_DUE:    "Acerto mensal da Casa",
-  HOUSEHOLD_SETTLEMENT_CLOSED: "Mês fechado na Casa",
-  HOUSEHOLD_MONTHLY_SUMMARY:   "Resumo mensal da Casa",
-  COACH_WEEKLY_INSIGHT:        "Insight semanal do consultor",
-};
 
 export default function SettingsPage() {
   const {
@@ -103,6 +67,47 @@ export default function SettingsPage() {
     members, addMember, removeMember,
     appSettings, updateAppSettings,
   } = useFinanceStore();
+  const { t, language, setLanguage } = useTranslation();
+
+  const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
+    { id: "profile",       label: t("settings.tabProfile"),       icon: User       },
+    { id: "members",       label: t("settings.tabMembers"),       icon: Users      },
+    { id: "accounts",      label: t("settings.tabAccounts"),      icon: CreditCard },
+    { id: "categories",    label: t("settings.tabCategories"),    icon: Tag        },
+    { id: "notifications", label: t("settings.tabNotifications"), icon: Bell       },
+    { id: "ai",            label: t("settings.tabAI"),            icon: Sparkles   },
+    { id: "integrations",  label: t("settings.tabIntegrations"),  icon: Link2      },
+    { id: "data",          label: t("settings.tabData"),          icon: Shield     },
+  ];
+
+  const ACCOUNT_LABELS: Record<string, string> = {
+    checking:   t("settings.accChecking"),
+    savings:    t("settings.accSavings"),
+    credit:     t("settings.accCredit"),
+    investment: t("settings.accInvestment"),
+  };
+
+  const NOTIF_TYPE_LABELS: Record<string, string> = {
+    SCORE_WEEKLY_SUMMARY:        t("notifTypes.SCORE_WEEKLY_SUMMARY"),
+    SCORE_LEVEL_UP:              t("notifTypes.SCORE_LEVEL_UP"),
+    STREAK_MILESTONE:            t("notifTypes.STREAK_MILESTONE"),
+    STREAK_BROKEN:               t("notifTypes.STREAK_BROKEN"),
+    BADGE_EARNED:                t("notifTypes.BADGE_EARNED"),
+    BUDGET_ALERT_80:             t("notifTypes.BUDGET_ALERT_80"),
+    BUDGET_ALERT_EXCEEDED:       t("notifTypes.BUDGET_ALERT_EXCEEDED"),
+    BUDGET_MONTHLY_REVIEW:       t("notifTypes.BUDGET_MONTHLY_REVIEW"),
+    MONTHLY_REPORT_READY:        t("notifTypes.MONTHLY_REPORT_READY"),
+    SAVINGS_POSITIVE:            t("notifTypes.SAVINGS_POSITIVE"),
+    LOW_BALANCE_WARNING:         t("notifTypes.LOW_BALANCE_WARNING"),
+    SUBSCRIPTION_DETECTED:       t("notifTypes.SUBSCRIPTION_DETECTED"),
+    SUBSCRIPTION_UNUSED:         t("notifTypes.SUBSCRIPTION_UNUSED"),
+    HOUSEHOLD_EXPENSE_SHARED:    t("notifTypes.HOUSEHOLD_EXPENSE_SHARED"),
+    HOUSEHOLD_BUDGET_ALERT:      t("notifTypes.HOUSEHOLD_BUDGET_ALERT"),
+    HOUSEHOLD_SETTLEMENT_DUE:    t("notifTypes.HOUSEHOLD_SETTLEMENT_DUE"),
+    HOUSEHOLD_SETTLEMENT_CLOSED: t("notifTypes.HOUSEHOLD_SETTLEMENT_CLOSED"),
+    HOUSEHOLD_MONTHLY_SUMMARY:   t("notifTypes.HOUSEHOLD_MONTHLY_SUMMARY"),
+    COACH_WEEKLY_INSIGHT:        t("notifTypes.COACH_WEEKLY_INSIGHT"),
+  };
 
   const [tab, setTab] = useState<Tab>("profile");
 
@@ -282,7 +287,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Configurações" subtitle="Gerencie sua conta e preferências" />
+      <PageHeader title={t("settings.title")} subtitle={t("settings.subtitle")} />
 
       <div className="flex flex-col @3xl:flex-row gap-6 items-start">
         {/* Tab sidebar */}
@@ -307,32 +312,32 @@ export default function SettingsPage() {
           {tab === "profile" && (
             <>
             <Card>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-6">Informações do Perfil</h2>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-6">{t("settings.profileTitle")}</h2>
               <div className="flex items-center gap-4 pb-5 mb-5 border-b border-slate-100 dark:border-slate-700">
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-sky-400 to-violet-500 flex items-center justify-center text-white font-bold text-lg shrink-0 select-none">
                   {initials}
                 </div>
                 <div>
                   <p className="font-semibold text-slate-900 dark:text-white">
-                    {profile.name || <span className="text-slate-400 italic">Nome não definido</span>}
+                    {profile.name || <span className="text-slate-400 italic">{t("settings.nameNotSet")}</span>}
                   </p>
                   <p className="text-sm text-slate-400 dark:text-slate-500">
-                    {profile.email || <span className="italic">Email não definido</span>}
+                    {profile.email || <span className="italic">{t("settings.emailNotSet")}</span>}
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-1 @sm:grid-cols-2 gap-4 mb-6">
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Nome completo</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{t("settings.fullName")}</label>
                   <input
                     value={profileName}
                     onChange={(e) => setProfileName(e.target.value)}
-                    placeholder="Seu nome completo"
+                    placeholder={t("settings.fullName")}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{t("settings.email")}</label>
                   <input
                     type="email"
                     value={profileEmail}
@@ -342,12 +347,12 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Fuso horário</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{t("settings.timezone")}</label>
                   <input defaultValue="America/Sao_Paulo"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Moeda padrão</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{t("settings.currency")}</label>
                   <input defaultValue="BRL — Real Brasileiro"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors" />
                 </div>
@@ -355,25 +360,53 @@ export default function SettingsPage() {
               <div className="flex items-center justify-end gap-3">
                 {profileSaved && (
                   <span className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                    <Check size={13} /> Alterações salvas
+                    <Check size={13} /> {t("common.saved")}
                   </span>
                 )}
-                <Button size="sm" onClick={handleProfileSave}>Salvar Alterações</Button>
+                <Button size="sm" onClick={handleProfileSave}>{t("settings.saveChanges")}</Button>
               </div>
             </Card>
 
             {/* ── Funcionalidades ── */}
             <Card>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Funcionalidades</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Ative ou desative módulos da aplicação conforme sua preferência.
-              </p>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{t("settings.featuresTitle")}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t("settings.featuresSubtitle")}</p>
               <SettingRow
-                label="Saúde financeira"
-                description="Exibe o índice de saúde financeira, conquistas e histórico de pontuação no painel e na navegação."
+                label={t("settings.healthScoreLabel")}
+                description={t("settings.healthScoreDesc")}
                 enabled={appSettings?.healthScoreEnabled !== false}
                 onChange={(v) => updateAppSettings({ healthScoreEnabled: v })}
               />
+            </Card>
+
+            {/* ── Idioma ── */}
+            <Card>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{t("settings.languageTitle")}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t("settings.languageSubtitle")}</p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setLanguage("pt")}
+                  className={cn(
+                    "flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors",
+                    language === "pt"
+                      ? "border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400"
+                      : "border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300 dark:hover:border-slate-600"
+                  )}
+                >
+                  {t("settings.langPt")}
+                </button>
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={cn(
+                    "flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors",
+                    language === "en"
+                      ? "border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400"
+                      : "border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300 dark:hover:border-slate-600"
+                  )}
+                >
+                  {t("settings.langEn")}
+                </button>
+              </div>
             </Card>
             </>
           )}
@@ -382,10 +415,8 @@ export default function SettingsPage() {
           {tab === "members" && (
             <>
             <Card>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Membros da Conta</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
-                Adicione pessoas que compartilham esta conta financeira.
-              </p>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{t("settings.membersTitle")}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">{t("settings.membersSub")}</p>
 
               {/* Current members */}
               {members.length > 0 && (
@@ -409,7 +440,7 @@ export default function SettingsPage() {
                             ? "bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400"
                             : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
                         )}>
-                          {m.role === "owner" ? "Dono" : "Membro"}
+                          {m.role === "owner" ? t("settings.memberRoleOwner") : t("settings.memberRoleMember")}
                         </span>
                         <button onClick={() => removeMember(m.id)}
                           className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all">
@@ -422,7 +453,7 @@ export default function SettingsPage() {
               )}
 
               {members.length === 0 && (
-                <p className="text-sm text-slate-400 text-center py-6 mb-4">Nenhum membro adicionado ainda.</p>
+                <p className="text-sm text-slate-400 text-center py-6 mb-4">{t("settings.memberEmpty")}</p>
               )}
 
               {/* Add member form */}
@@ -449,15 +480,15 @@ export default function SettingsPage() {
                     onChange={(e) => setNewMemberRole(e.target.value as "owner" | "member")}
                     className="h-9 pl-3 pr-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200 focus:outline-none appearance-none cursor-pointer"
                   >
-                    <option value="member">Membro</option>
-                    <option value="owner">Dono</option>
+                    <option value="member">{t("settings.memberRoleMember")}</option>
+                    <option value="owner">{t("settings.memberRoleOwner")}</option>
                   </select>
                   <Button size="sm" onClick={handleAddMember} disabled={!newMemberName.trim() || !newMemberEmail.trim()}>
-                    <Plus size={13} /> Adicionar
+                    <Plus size={13} /> {t("settings.memberAdd")}
                   </Button>
                   {memberAdded && (
                     <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                      <Check size={12} /> Membro adicionado
+                      <Check size={12} /> {t("settings.memberAdded")}
                     </span>
                   )}
                 </div>
@@ -557,7 +588,7 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Button size="sm" onClick={() => setShowNewAccount(true)}>
-                  <Plus size={13} /> Nova Conta
+                  <Plus size={13} /> {t("settings.accountsAdd")}
                 </Button>
               </div>
               <div className="space-y-2">
@@ -594,7 +625,7 @@ export default function SettingsPage() {
                   </div>
                 ))}
                 {accounts.length === 0 && (
-                  <p className="text-sm text-slate-400 text-center py-8">Nenhuma conta cadastrada.</p>
+                  <p className="text-sm text-slate-400 text-center py-8">{t("settings.accountNoData")}</p>
                 )}
               </div>
             </Card>
@@ -611,12 +642,12 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Button size="sm" onClick={() => setShowNewCategory(true)}>
-                  <Plus size={13} /> Nova Categoria
+                  <Plus size={13} /> {t("settings.catAdd")}
                 </Button>
               </div>
               <div className="space-y-1.5">
                 <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1 mb-2">
-                  Categorias do sistema
+                  {t("settings.catSystem")}
                 </p>
                 {categories.filter((c) => SYSTEM_IDS.has(c.id)).map((cat) => (
                   <div key={cat.id}
@@ -626,7 +657,7 @@ export default function SettingsPage() {
                     </span>
                     <span className="flex-1 text-sm font-medium text-slate-800 dark:text-slate-200">{cat.name}</span>
                     <span className="text-[11px] text-slate-400 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-0.5 rounded-full">
-                      Sistema
+                      {t("settings.catSystemTag")}
                     </span>
                   </div>
                 ))}
@@ -666,9 +697,9 @@ export default function SettingsPage() {
             <>
               {/* Email */}
               <Card>
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Email</h2>
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{t("settings.notifEmailTitle")}</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                  Receba as mesmas notificações no email da sua conta.
+                  {t("settings.notifEmailSubtitle")}
                   {profile.email && (
                     <span className="block mt-1 font-medium text-slate-700 dark:text-slate-300">{profile.email}</span>
                   )}
@@ -678,7 +709,7 @@ export default function SettingsPage() {
                 ) : (
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-700 dark:text-slate-300">
-                      {notifPrefs.data?.prefs?.email_enabled ? "Ativo" : "Inativo"}
+                      {notifPrefs.data?.prefs?.email_enabled ? t("settings.notifEmailActive") : t("settings.notifEmailInactive")}
                     </span>
                     <Toggle
                       enabled={notifPrefs.data?.prefs?.email_enabled ?? false}
@@ -688,7 +719,7 @@ export default function SettingsPage() {
                 )}
                 {!profile.email && (
                   <p className="text-xs text-amber-500 mt-2">
-                    Adicione um email no perfil para ativar esta opção.
+                    {t("settings.notifEmailWarning")}
                   </p>
                 )}
               </Card>
@@ -699,12 +730,12 @@ export default function SettingsPage() {
                   <h2 className="text-base font-semibold text-slate-900 dark:text-white">Telegram</h2>
                   {notifPrefs.data?.telegramConnected && (
                     <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                      <Check size={12} /> Configurado
+                      <Check size={12} /> {t("settings.notifTgConfigured")}
                     </span>
                   )}
                 </div>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                  Informe o token do bot e o seu Chat ID para receber alertas diretamente no Telegram.
+                  {t("settings.notifTgSubtitle")}
                 </p>
                 {notifPrefs.loading ? (
                   <p className="text-sm text-slate-400">Carregando...</p>
@@ -712,7 +743,7 @@ export default function SettingsPage() {
                   <div className="space-y-3">
                     <div className="space-y-1.5">
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Bot Token
+                        {t("settings.notifTgToken")}
                       </label>
                       <input
                         type="password"
@@ -721,11 +752,11 @@ export default function SettingsPage() {
                         placeholder={notifPrefs.data?.telegramBotTokenSet ? "••••••••••••  (já configurado)" : "1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ"}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors font-mono"
                       />
-                      <p className="text-xs text-slate-400">Obtenha o token com o <span className="font-medium">@BotFather</span> no Telegram.</p>
+                      <p className="text-xs text-slate-400">{t("settings.notifTgTokenHint")}</p>
                     </div>
                     <div className="space-y-1.5">
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Chat ID
+                        {t("settings.notifTgChatId")}
                       </label>
                       <input
                         value={tgChatId}
@@ -733,7 +764,7 @@ export default function SettingsPage() {
                         placeholder="Ex: 123456789 ou @seu_username"
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 transition-colors font-mono"
                       />
-                      <p className="text-xs text-slate-400">Envie uma mensagem ao bot e use <span className="font-medium">@userinfobot</span> para descobrir seu ID.</p>
+                      <p className="text-xs text-slate-400">{t("settings.notifTgChatHint")}</p>
                     </div>
                     <div className="flex items-center gap-2 pt-1">
                       <Button
@@ -741,24 +772,24 @@ export default function SettingsPage() {
                         onClick={handleSaveTelegram}
                         disabled={tgSaving || (!tgBotToken.trim() && !notifPrefs.data?.telegramBotTokenSet) || !tgChatId.trim()}
                       >
-                        {tgSaving ? "Salvando…" : "Salvar"}
+                        {tgSaving ? t("settings.notifTgSaving") : t("settings.notifTgSave")}
                       </Button>
                       <Button
                         size="sm"
                         onClick={handleTestTelegram}
                         disabled={tgTesting || (!tgBotToken.trim() && !notifPrefs.data?.telegramBotTokenSet) || !tgChatId.trim()}
                       >
-                        {tgTesting ? "Enviando…" : "Testar conexão"}
+                        {tgTesting ? t("settings.notifTgTesting") : t("settings.notifTgTest")}
                       </Button>
                       {tgSaved && (
                         <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                          <Check size={12} /> Salvo
+                          <Check size={12} /> {t("settings.notifTgSaved")}
                         </span>
                       )}
                     </div>
                     {tgTestResult && (
                       <p className={cn("text-xs font-medium mt-1", tgTestResult.ok ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400")}>
-                        {tgTestResult.ok ? "✓ Mensagem enviada com sucesso!" : `✗ ${tgTestResult.error}`}
+                        {tgTestResult.ok ? t("settings.notifTgTestOk") : t("settings.notifTgTestFail", { error: tgTestResult.error ?? "" })}
                       </p>
                     )}
                   </div>
@@ -768,10 +799,8 @@ export default function SettingsPage() {
               {/* Notification type toggles */}
               {notifPrefs.data && (
                 <Card>
-                  <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Tipos de notificação</h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                    Controle quais eventos geram notificações.
-                  </p>
+                  <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{t("settings.notifTypesTitle")}</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t("settings.notifTypesSub")}</p>
                   {Object.entries(notifPrefs.data.prefs.types).map(([type, enabled]) => (
                     <SettingRow
                       key={type}
@@ -786,19 +815,19 @@ export default function SettingsPage() {
 
               {/* Legacy local toggles */}
               <Card>
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Preferências de Notificação</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Escolha como e quando deseja ser notificado.</p>
-                <SettingRow label="Alertas de gastos por email"
-                  description="Receba emails quando suas despesas mensais ultrapassarem sua receita."
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{t("settings.notifLegacyTitle")}</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">{t("settings.notifLegacySub")}</p>
+                <SettingRow label={t("settings.alertsByEmail")}
+                  description={t("settings.alertsByEmailDesc")}
                   enabled={emailAlerts}   onChange={setEmailAlerts} />
-                <SettingRow label="Push notifications"
-                  description="Alertas instantâneos no dispositivo para eventos importantes."
+                <SettingRow label={t("settings.pushAlerts")}
+                  description={t("settings.pushAlertsDesc")}
                   enabled={pushAlerts}    onChange={setPushAlerts} />
-                <SettingRow label="Resumo semanal"
-                  description="Email toda segunda-feira com o resumo da semana anterior."
+                <SettingRow label={t("settings.weeklyDigest")}
+                  description={t("settings.weeklyDigestDesc")}
                   enabled={weeklyDigest}  onChange={setWeeklyDigest} />
-                <SettingRow label="Relatório mensal"
-                  description="Receba o relatório completo no início de cada mês."
+                <SettingRow label={t("settings.monthlyReport")}
+                  description={t("settings.monthlyReportDesc")}
                   enabled={monthlyReport} onChange={setMonthlyReport} />
               </Card>
             </>
@@ -807,8 +836,8 @@ export default function SettingsPage() {
           {/* ── AI ── */}
           {tab === "ai" && (
             <Card>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Inteligência Artificial</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Configure como a IA categoriza e analisa suas finanças.</p>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{t("settings.aiTitle")}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">{t("settings.aiEnabledDesc")}</p>
               <div className="mb-5 px-4 py-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/50 flex items-start gap-3">
                 <Sparkles size={15} className="text-sky-500 mt-0.5 shrink-0" />
                 <div>
@@ -816,14 +845,14 @@ export default function SettingsPage() {
                   <p className="text-xs text-sky-600 dark:text-sky-500 mt-0.5">Precisão de 95%+ em categorização de transações brasileiras.</p>
                 </div>
               </div>
-              <SettingRow label="Categorização automática"
-                description="Categoriza novas transações automaticamente ao serem adicionadas."
+              <SettingRow label={t("settings.aiEnabled")}
+                description={t("settings.aiEnabledDesc")}
                 enabled={aiEnabled}      onChange={setAiEnabled} />
-              <SettingRow label="Sugestões durante cadastro"
-                description="Exibe sugestões de categoria enquanto você digita a descrição."
+              <SettingRow label={t("settings.aiAutoSuggest")}
+                description={t("settings.aiAutoSuggestDesc")}
                 enabled={autoSuggest}    onChange={setAutoSuggest} />
-              <SettingRow label="Aprender com correções"
-                description="A IA melhora com cada correção de categoria que você fizer."
+              <SettingRow label={t("settings.aiLearn")}
+                description={t("settings.aiLearnDesc")}
                 enabled={learnOverrides} onChange={setLearnOverrides} />
             </Card>
           )}
@@ -912,15 +941,15 @@ export default function SettingsPage() {
           {/* ── Data & Privacy ── */}
           {tab === "data" && (
             <Card>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Dados e Privacidade</h2>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">{t("settings.dataTitle")}</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Controle seus dados em conformidade com a LGPD.</p>
               <div className="space-y-3">
                 <div className="flex items-start justify-between px-4 py-4 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 transition-colors">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Exportar meus dados</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Baixe todos os seus dados em formato JSON (Art. 18 LGPD).</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t("settings.dataExport")}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{t("settings.dataExportDesc")}</p>
                   </div>
-                  <Button variant="secondary" size="sm"><Download size={13} /> Exportar</Button>
+                  <Button variant="secondary" size="sm"><Download size={13} /> {t("settings.dataExport")}</Button>
                 </div>
                 <div className="flex items-start justify-between px-4 py-4 rounded-xl border border-slate-100 dark:border-slate-700">
                   <div>
@@ -931,10 +960,10 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-start justify-between px-4 py-4 rounded-xl border border-red-100 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30">
                   <div>
-                    <p className="text-sm font-semibold text-red-700 dark:text-red-400">Excluir conta</p>
-                    <p className="text-xs text-red-400 dark:text-red-500 mt-0.5">Remove permanentemente todos os seus dados. Esta ação é irreversível.</p>
+                    <p className="text-sm font-semibold text-red-700 dark:text-red-400">{t("settings.dataDelete")}</p>
+                    <p className="text-xs text-red-400 dark:text-red-500 mt-0.5">{t("settings.dataDeleteDesc")}</p>
                   </div>
-                  <Button variant="danger" size="sm">Excluir conta</Button>
+                  <Button variant="danger" size="sm">{t("settings.dataDelete")}</Button>
                 </div>
               </div>
             </Card>

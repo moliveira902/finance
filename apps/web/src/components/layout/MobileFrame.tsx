@@ -5,18 +5,20 @@ import {
   Wifi, Signal, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/contexts/LanguageContext";
 
-const NAV = [
-  { href: "/dashboard",    icon: LayoutDashboard, label: "Início"     },
-  { href: "/transactions", icon: ArrowLeftRight,  label: "Transações" },
-  { href: "/recorrentes",  icon: RepeatIcon,      label: "Recorrentes"},
-  { href: "/reports",      icon: BarChart2,       label: "Relatórios" },
-  { href: "/settings",     icon: Settings,        label: "Config."    },
+const NAV_ROUTES = [
+  { href: "/dashboard",    icon: LayoutDashboard, key: "dashboard"    },
+  { href: "/transactions", icon: ArrowLeftRight,  key: "transactions" },
+  { href: "/recorrentes",  icon: RepeatIcon,      key: "recurring"    },
+  { href: "/reports",      icon: BarChart2,       key: "reports"      },
+  { href: "/settings",     icon: Settings,        key: "settings"     },
 ];
 
 function NavTabs({ compact = false }: { compact?: boolean }) {
   const pathname = usePathname();
   const router   = useRouter();
+  const { t }    = useTranslation();
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -26,7 +28,8 @@ function NavTabs({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className={cn("flex items-center justify-around", compact ? "px-1" : "px-2")}>
-      {NAV.map(({ href, icon: Icon, label }) => {
+      {NAV_ROUTES.map(({ href, icon: Icon, key }) => {
+        const label = t(`nav.${key}`).split(" ")[0];
         const active = pathname === href || pathname.startsWith(href + "/");
         return (
           <button
@@ -57,7 +60,7 @@ function NavTabs({ compact = false }: { compact?: boolean }) {
       >
         <LogOut size={compact ? 20 : 22} strokeWidth={1.8} />
         <span className={cn("font-semibold truncate", compact ? "text-[10px]" : "text-[9px]")}>
-          Sair
+          {t("nav.logout").split(" ")[0]}
         </span>
       </button>
     </div>
@@ -76,8 +79,9 @@ function BatteryIcon() {
 
 // ── Phone simulator (desktop "Mobile" preview) ────────────────────────────────
 export function MobileFrame({ children }: { children: React.ReactNode }) {
+  const { locale } = useTranslation();
   const now  = new Date();
-  const time = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const time = now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="flex justify-center items-start min-h-full py-6 px-4 bg-slate-200 dark:bg-slate-950">

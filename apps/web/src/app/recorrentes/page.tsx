@@ -9,6 +9,7 @@ import { useFinanceStore } from "@/stores/financeStore";
 import { formatBRL } from "@/lib/mock-data";
 import type { Transaction } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/contexts/LanguageContext";
 
 function monthlyEquivalent(tx: Transaction): number {
   return tx.recurringPeriod === "yearly"
@@ -18,6 +19,7 @@ function monthlyEquivalent(tx: Transaction): number {
 
 export default function RecorrentesPage() {
   const { transactions, deleteTransaction } = useFinanceStore();
+  const { t } = useTranslation();
   const [showNew, setShowNew] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
 
@@ -47,11 +49,11 @@ export default function RecorrentesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Recorrentes"
-        subtitle="Transações que se repetem mensalmente ou anualmente"
+        title={t("recurring.title")}
+        subtitle={t("recurring.subtitle")}
         actions={
           <Button size="sm" onClick={() => setShowNew(true)}>
-            <Plus size={14} /> Nova Recorrente
+            <Plus size={14} /> {t("recurring.addBtn")}
           </Button>
         }
       />
@@ -59,28 +61,28 @@ export default function RecorrentesPage() {
       {/* Summary totals */}
       <div className="grid grid-cols-2 @3xl:grid-cols-4 gap-4">
         <Card>
-          <CardLabel>Despesas / mês</CardLabel>
+          <CardLabel>{t("recurring.expensesPerMonth")}</CardLabel>
           <CardValue className="text-red-500 dark:text-red-400">{formatBRL(monthlyExpenses)}</CardValue>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Compromissos fixos mensais</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">{t("recurring.expensesSubtitle")}</p>
         </Card>
         <Card>
-          <CardLabel>Receitas / mês</CardLabel>
+          <CardLabel>{t("recurring.incomePerMonth")}</CardLabel>
           <CardValue className="text-emerald-600 dark:text-emerald-400">{formatBRL(monthlyIncome)}</CardValue>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Entradas fixas mensais</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">{t("recurring.incomeSubtitle")}</p>
         </Card>
         <Card>
-          <CardLabel>Saldo líquido / mês</CardLabel>
+          <CardLabel>{t("recurring.netPerMonth")}</CardLabel>
           <CardValue className={monthlyNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}>
             {monthlyNet >= 0 ? "+" : "−"}{formatBRL(Math.abs(monthlyNet))}
           </CardValue>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Receitas − despesas fixas</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">{t("recurring.netSubtitle")}</p>
         </Card>
         <Card>
-          <CardLabel>Impacto anual</CardLabel>
+          <CardLabel>{t("recurring.annualImpact")}</CardLabel>
           <CardValue className={annualNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}>
             {annualNet >= 0 ? "+" : "−"}{formatBRL(Math.abs(annualNet))}
           </CardValue>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Projeção para 12 meses</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">{t("recurring.annualSubtitle")}</p>
         </Card>
       </div>
 
@@ -88,9 +90,9 @@ export default function RecorrentesPage() {
       {templates.length === 0 ? (
         <Card className="py-16 flex flex-col items-center gap-3 text-slate-400 dark:text-slate-500">
           <RepeatIcon size={32} className="opacity-30" />
-          <p className="text-sm">Nenhuma transação recorrente cadastrada.</p>
+          <p className="text-sm">{t("recurring.empty")}</p>
           <Button size="sm" onClick={() => setShowNew(true)}>
-            <Plus size={14} /> Criar primeira recorrente
+            <Plus size={14} /> {t("recurring.createFirst")}
           </Button>
         </Card>
       ) : (
@@ -110,7 +112,7 @@ export default function RecorrentesPage() {
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
                           <CalendarDays size={10} />
-                          {tx.recurringPeriod === "yearly" ? "Anual" : "Mensal"}
+                          {tx.recurringPeriod === "yearly" ? t("recurring.yearly") : t("recurring.monthly")}
                         </span>
                         <span className="text-xs text-slate-300 dark:text-slate-600">·</span>
                         <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
@@ -137,7 +139,7 @@ export default function RecorrentesPage() {
                 {/* Amount breakdown */}
                 <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-slate-50 dark:border-slate-700/50">
                   <div>
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Por período</p>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">{t("recurring.perPeriod")}</p>
                     <span className={cn(
                       "text-base font-bold tabular-nums",
                       tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-800 dark:text-slate-200"
@@ -147,7 +149,7 @@ export default function RecorrentesPage() {
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">
-                      {tx.recurringPeriod === "yearly" ? "Equiv./mês" : "Impacto anual"}
+                      {tx.recurringPeriod === "yearly" ? t("recurring.equivMonth") : t("recurring.annualImpactCard")}
                     </p>
                     <span className={cn(
                       "text-sm font-semibold tabular-nums flex items-center gap-1",
@@ -160,7 +162,7 @@ export default function RecorrentesPage() {
                   {tx.recurringCount && tx.recurringCount > 0 && (
                     <div>
                       <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">
-                        Total ({tx.recurringCount} {tx.recurringPeriod === "yearly" ? "anos" : "meses"})
+                        {t("recurring.totalLabel", { n: String(tx.recurringCount), period: tx.recurringPeriod === "yearly" ? t("recurring.years") : t("recurring.months") })}
                       </p>
                       <span className="text-sm font-bold tabular-nums text-sky-600 dark:text-sky-400">
                         {formatBRL(Math.abs(tx.amount) * tx.recurringCount)}

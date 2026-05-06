@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useFinanceStore } from "@/stores/financeStore";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useTranslation } from "@/contexts/LanguageContext";
 import { ChangelogModal } from "@/components/ui/ChangelogModal";
 import { CURRENT_VERSION } from "@/lib/changelog";
 import type { Household } from "@/lib/household";
@@ -27,22 +28,23 @@ function shortName(name: string): string {
   return `${parts[0]} ${parts[parts.length - 1][0]}.`;
 }
 
-const BASE_NAV = [
-  { label: "Dashboard",     href: "/dashboard",    icon: LayoutDashboard },
-  { label: "Transações",    href: "/transactions", icon: ArrowLeftRight  },
-  { label: "Recorrentes",   href: "/recorrentes",  icon: RepeatIcon      },
-  { label: "Relatórios",    href: "/reports",      icon: BarChart2       },
-  { label: "Meu Consultor", href: "/coach",        icon: Bot             },
-  { label: "Configurações", href: "/settings",     icon: Settings        },
-];
+const NAV_KEYS = [
+  { key: "dashboard",    href: "/dashboard",    icon: LayoutDashboard },
+  { key: "transactions", href: "/transactions", icon: ArrowLeftRight  },
+  { key: "recurring",    href: "/recorrentes",  icon: RepeatIcon      },
+  { key: "reports",      href: "/reports",      icon: BarChart2       },
+  { key: "advisor",      href: "/coach",        icon: Bot             },
+  { key: "settings",     href: "/settings",     icon: Settings        },
+] as const;
 
-const SCORE_NAV = { label: "Saúde financeira", href: "/score", icon: Activity };
+const SCORE_ROUTE = { key: "healthScore", href: "/score", icon: Activity } as const;
 
 export function Sidebar() {
   const pathname    = usePathname();
   const router      = useRouter();
   const { profile, appSettings } = useFinanceStore();
   const currentUser = useCurrentUser();
+  const { t }       = useTranslation();
   const initials    = nameInitials(profile.name);
   const displayName = shortName(profile.name);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -75,7 +77,11 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-        {[...BASE_NAV.slice(0, 4), ...(appSettings?.healthScoreEnabled !== false ? [SCORE_NAV] : []), ...BASE_NAV.slice(4)].map(({ label, href, icon: Icon }) => {
+        {[
+          ...NAV_KEYS.slice(0, 4).map(n => ({ label: t(`nav.${n.key}`), href: n.href, icon: n.icon })),
+          ...(appSettings?.healthScoreEnabled !== false ? [{ label: t(`nav.${SCORE_ROUTE.key}`), href: SCORE_ROUTE.href, icon: SCORE_ROUTE.icon }] : []),
+          ...NAV_KEYS.slice(4).map(n => ({ label: t(`nav.${n.key}`), href: n.href, icon: n.icon })),
+        ].map(({ label, href, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
@@ -116,7 +122,7 @@ export function Sidebar() {
                 pathname.startsWith("/household") ? "text-sky-500" : "text-slate-400 dark:text-slate-500"
               )}
             />
-            Casa
+            {t("nav.household")}
           </Link>
         )}
         {currentUser?.isAdmin && (
@@ -136,7 +142,7 @@ export function Sidebar() {
                 pathname.startsWith("/admin") ? "text-amber-500" : "text-slate-400 dark:text-slate-500"
               )}
             />
-            Admin
+            {t("nav.admin")}
           </Link>
         )}
       </nav>
@@ -161,7 +167,7 @@ export function Sidebar() {
           className="flex items-center gap-2.5 w-full h-8 px-3 rounded-lg text-sm text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
         >
           <LogOut size={14} className="shrink-0" />
-          Sair da conta
+          {t("nav.logout")}
         </button>
 
         {/* Version badge */}
