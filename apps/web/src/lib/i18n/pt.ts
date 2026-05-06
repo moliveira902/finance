@@ -114,6 +114,7 @@ export const pt = {
     month:            "mês",
     year:             "ano",
     indefinite:       "Contínuo",
+    installments:     "Parcelas",
     monthly:          "Mensal",
     yearly:           "Anual",
   },

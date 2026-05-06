@@ -114,6 +114,7 @@ export const en = {
     month:            "month",
     year:             "year",
     indefinite:       "Ongoing",
+    installments:     "Installments",
     monthly:          "Monthly",
     yearly:           "Yearly",
   },
