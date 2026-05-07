@@ -32,6 +32,29 @@ export function TransactionModal({ open, onClose, initial, defaultRecurring }: P
   const [error,           setError]           = useState("");
 
   useEffect(() => {
+    if (!open) return;
+    if (initial) {
+      setDesc(initial.description);
+      setAmount(String(Math.abs(initial.amount)));
+      setType(initial.type);
+      setCatId(initial.category.id);
+      setAccId(initial.account.id);
+      setDate(initial.date);
+      setIsRecurring(initial.isRecurring ?? false);
+      setRecurringPeriod(initial.recurringPeriod ?? "monthly");
+      setRecurringCount(initial.recurringCount ? String(initial.recurringCount) : "");
+      setIsShared(initial.isShared ?? false);
+    } else {
+      setDesc(""); setAmount(""); setType("expense");
+      setCatId(categories[0]?.id ?? "");
+      setAccId(accounts[0]?.id ?? "");
+      setDate(today); setIsRecurring(defaultRecurring ?? false);
+      setRecurringPeriod("monthly"); setRecurringCount(""); setIsShared(false);
+    }
+    setError("");
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     fetch("/api/household")
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { household?: unknown } | null) => { if (d?.household) setHasHousehold(true); })
