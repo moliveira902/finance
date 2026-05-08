@@ -47,7 +47,7 @@ export const pt = {
   dashboard: {
     title:          "Dashboard",
     subtitle:       "Visão geral das suas finanças — {month}",
-    netWorth:       "Patrimônio Líquido",
+    netWorth:       "Custo fixo",
     netWorthSub:    "Fixos/mês: {sign}{value}",
     monthlyIncome:  "Receitas do mês",
     incomeSub:      "Salário + freelance",
