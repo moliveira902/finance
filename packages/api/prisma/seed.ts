@@ -142,6 +142,40 @@ async function main() {
   }
   console.log("  ✓ Budgets:", budgetData.length);
 
+  // Health score history (last 6 months)
+  for (let i = 0; i < 6; i++) {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - i);
+    d.setHours(0, 0, 0, 0);
+    await prisma.healthScoreHistory.upsert({
+      where: { userId_month: { userId: DEMO_USER_ID, month: d } },
+      update: {},
+      create: {
+        userId: DEMO_USER_ID,
+        month: d,
+        score: 60 + Math.floor(Math.random() * 20),
+        savingsScore: 12,
+        budgetScore: 18,
+        emergencyScore: 10,
+        debtScore: 14,
+        streakScore: 6,
+        currentStreak: 4,
+      },
+    });
+  }
+  console.log("  ✓ Health score history: 6 months");
+
+  // Badges
+  await prisma.badge.createMany({
+    skipDuplicates: true,
+    data: [
+      { userId: DEMO_USER_ID, badgeId: "first_budget" },
+      { userId: DEMO_USER_ID, badgeId: "saver_10" },
+    ],
+  });
+  console.log("  ✓ Badges: 2");
+
   console.log("✅ Seed complete.");
 }
 

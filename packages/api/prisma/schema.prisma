@@ -18,10 +18,21 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  accounts     Account[]
-  transactions Transaction[]
-  budgets      Budget[]
-  categories   Category[]
+  telegramChatId           String?
+  telegramConnectedAt      DateTime?
+  healthScoreLast          Int?
+  healthScoreUpdatedAt     DateTime?
+  streakFreezeUsedMonth    DateTime?  @db.Date
+  lowBalanceThresholdCents Int        @default(50000)
+  notificationPrefs        Json       @default("{}")
+
+  accounts           Account[]
+  transactions       Transaction[]
+  budgets            Budget[]
+  categories         Category[]
+  healthScoreHistory HealthScoreHistory[]
+  badges             Badge[]
+  notifications      Notification[]
 
   @@map("users")
 }
@@ -136,4 +147,55 @@ model BudgetPeriod {
 
   @@unique([budgetId, periodStart])
   @@map("budget_periods")
+}
+
+model HealthScoreHistory {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @db.Uuid
+  month          DateTime @db.Date
+  score          Int      @default(0)
+  savingsScore   Int      @default(0)
+  budgetScore    Int      @default(0)
+  emergencyScore Int      @default(0)
+  debtScore      Int      @default(0)
+  streakScore    Int      @default(0)
+  currentStreak  Int      @default(0)
+  computedAt     DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month])
+  @@index([userId, month(sort: Desc)])
+  @@map("health_score_history")
+}
+
+model Badge {
+  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId   String   @db.Uuid
+  badgeId  String
+  earnedAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@map("badges")
+}
+
+model Notification {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String    @db.Uuid
+  notificationType String
+  message          String
+  metadata         Json      @default("{}")
+  status           String    @default("pending")
+  channel          String    @default("telegram")
+  sentAt           DateTime?
+  readAt           DateTime?
+  createdAt        DateTime  @default(now())
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@map("notifications")
 }
