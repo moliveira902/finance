@@ -258,23 +258,30 @@ export default function SettingsPage() {
   // Weekly report
   const [weeklyReportSending, setWeeklyReportSending] = useState(false);
   const [weeklyReportResult,  setWeeklyReportResult]  = useState<"ok" | "error" | null>(null);
+  const [weeklyReportError,   setWeeklyReportError]   = useState<string | null>(null);
 
   async function handleSendWeeklyReport() {
     setWeeklyReportSending(true);
     setWeeklyReportResult(null);
+    setWeeklyReportError(null);
     try {
       const res = await fetch("/api/notifications/weekly-report", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ transactions }),
       });
-      const data = await res.json().catch(() => null);
-      setWeeklyReportResult(data?.ok ? "ok" : "error");
+      const data = await res.json().catch(() => null) as { ok: boolean; error?: string } | null;
+      if (data?.ok) {
+        setWeeklyReportResult("ok");
+      } else {
+        setWeeklyReportResult("error");
+        setWeeklyReportError(data?.error ?? null);
+      }
     } catch {
       setWeeklyReportResult("error");
     } finally {
       setWeeklyReportSending(false);
-      setTimeout(() => setWeeklyReportResult(null), 4000);
+      setTimeout(() => { setWeeklyReportResult(null); setWeeklyReportError(null); }, 6000);
     }
   }
 
@@ -924,7 +931,7 @@ export default function SettingsPage() {
                   )}
                   {weeklyReportResult === "error" && (
                     <span className="text-xs text-red-500 dark:text-red-400 font-medium">
-                      {t("settings.weeklyReportFail")}
+                      {weeklyReportError ?? t("settings.weeklyReportFail")}
                     </span>
                   )}
                 </div>

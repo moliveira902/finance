@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/sessionUser";
 import { getStore, type Transaction } from "@/lib/kv-store";
-import { dispatch } from "@/lib/notificationService";
+import { sendTelegramMessage, dispatch } from "@/lib/notificationService";
+import { getUserPrefs } from "@/lib/userPrefs";
+import { sendNotificationEmail } from "@/lib/emailService";
 
 function getWeekRange(offsetWeeks: number = 0): { start: Date; end: Date } {
   const now = new Date();
@@ -76,15 +78,15 @@ function buildMessage(
     lines.push(`\n*Por categoria:*`);
     for (const [catId, cat] of sortedCategories) {
       const prevCat = prevByCategory.get(catId);
-      let delta = "";
+      let diff = "";
       if (prevCat) {
-        const diff = cat.total - prevCat.total;
-        if (diff > 1) delta = ` *(▲ ${fmt(diff)})*`;
-        else if (diff < -1) delta = ` *(▼ ${fmt(Math.abs(diff))})*`;
+        const d = cat.total - prevCat.total;
+        if (d > 1)  diff = ` *(▲ ${fmt(d)})*`;
+        else if (d < -1) diff = ` *(▼ ${fmt(Math.abs(d))})*`;
       } else if (prevTotal > 0) {
-        delta = ` _(novo)_`;
+        diff = ` _(novo)_`;
       }
-      lines.push(`${cat.icon} ${cat.name}: ${fmt(cat.total)}${delta}`);
+      lines.push(`${cat.icon} ${cat.name}: ${fmt(cat.total)}${diff}`);
     }
   } else {
     lines.push(`\n_Nenhuma despesa registrada nesta semana._`);
@@ -106,7 +108,12 @@ export async function POST(request: Request) {
     // body is optional
   }
 
-  const allTxs = clientTransactions ?? (await getStore(user.id)).transactions;
+  const [allTxsFromStore, prefs] = await Promise.all([
+    clientTransactions ? Promise.resolve({ transactions: clientTransactions }) : getStore(user.id),
+    getUserPrefs(user.id),
+  ]);
+
+  const allTxs = clientTransactions ?? (allTxsFromStore as { transactions: Transaction[] }).transactions;
 
   const thisWeek = getWeekRange(0);
   const prevWeek = getWeekRange(1);
@@ -116,11 +123,59 @@ export async function POST(request: Request) {
 
   const message = buildMessage(thisTxs, prevTxs, thisWeek.start, thisWeek.end);
 
-  await dispatch(user.id, "WEEKLY_EXPENSE_REPORT", message, {
+  const metadata = {
     weekStart: thisWeek.start.toISOString(),
     weekEnd:   thisWeek.end.toISOString(),
     total:     thisTxs.reduce((s, t) => s + Math.abs(t.amount), 0),
-  });
+  };
 
-  return NextResponse.json({ ok: true });
+  // ── Direct send (mirrors the test button — bypasses KV/anti-spam) ──────────
+  const hasTelegram = !!prefs.telegramChatId && !!prefs.telegramBotToken;
+  const hasEmail    = prefs.notificationPrefs.email_enabled && !!prefs.telegramChatId; // email from store profile
+
+  let telegramSent = false;
+  let emailSent    = false;
+  const errors: string[] = [];
+
+  if (hasTelegram) {
+    try {
+      await sendTelegramMessage(prefs.telegramBotToken!, prefs.telegramChatId!, message);
+      telegramSent = true;
+    } catch (e) {
+      errors.push(`Telegram: ${e instanceof Error ? e.message : "erro desconhecido"}`);
+    }
+  }
+
+  // Email fallback via emailService
+  if (!telegramSent && hasEmail) {
+    try {
+      const store = await getStore(user.id);
+      if (store.profile.email) {
+        await sendNotificationEmail(store.profile.email, "WEEKLY_EXPENSE_REPORT", message);
+        emailSent = true;
+      }
+    } catch (e) {
+      errors.push(`Email: ${e instanceof Error ? e.message : "erro desconhecido"}`);
+    }
+  }
+
+  // ── In-app notification record (best-effort, non-blocking) ─────────────────
+  dispatch(user.id, "WEEKLY_EXPENSE_REPORT", message, metadata).catch(() => {});
+
+  // ── Response ────────────────────────────────────────────────────────────────
+  if (!hasTelegram && !hasEmail) {
+    return NextResponse.json({
+      ok:    false,
+      error: "Telegram não configurado. Adicione o Bot Token e Chat ID em Configurações → Notificações.",
+    }, { status: 400 });
+  }
+
+  if (!telegramSent && !emailSent) {
+    return NextResponse.json({
+      ok:    false,
+      error: errors.join(" | ") || "Falha ao enviar notificação.",
+    }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, telegramSent, emailSent });
 }
