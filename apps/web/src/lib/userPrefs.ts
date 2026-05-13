@@ -16,6 +16,7 @@ export const DEFAULT_NOTIFICATION_TYPES: Record<string, boolean> = {
   HOUSEHOLD_BUDGET_ALERT:   true,
   COACH_WEEKLY_INSIGHT:     true,
   INACTIVITY_NUDGE:         true,
+  WEEKLY_EXPENSE_REPORT:    true,
 };
 
 export const DEFAULT_TYPE_CHANNELS: Record<string, { telegram: boolean; email: boolean }> = {
@@ -32,6 +33,7 @@ export const DEFAULT_TYPE_CHANNELS: Record<string, { telegram: boolean; email: b
   HOUSEHOLD_BUDGET_ALERT:   { telegram: true,  email: false },
   COACH_WEEKLY_INSIGHT:     { telegram: false, email: true  },
   INACTIVITY_NUDGE:         { telegram: true,  email: true  },
+  WEEKLY_EXPENSE_REPORT:    { telegram: true,  email: true  },
 };
 
 export interface NotificationPrefs {

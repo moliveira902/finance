@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import {
   User, Bell, CreditCard, Download, Shield, Sparkles, Wallet, Check, Tag,
-  Plus, Pencil, Trash2, Users, Link2, Copy, RefreshCw, Send, Mail,
+  Plus, Pencil, Trash2, Users, Link2, Copy, RefreshCw, Send, Mail, Clock,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -123,6 +123,7 @@ const SYSTEM_IDS = new Set(["1","2","3","4","5","6","7","8","9","10"]);
 
 export default function SettingsPage() {
   const {
+    transactions,
     accounts, categories, deleteAccount, deleteCategory,
     profile, updateProfile,
     members, addMember, removeMember,
@@ -254,6 +255,29 @@ export default function SettingsPage() {
     setTgTestResult(data ?? { ok: false, error: "Erro de rede" });
     setTgTesting(false);
   }
+  // Weekly report
+  const [weeklyReportSending, setWeeklyReportSending] = useState(false);
+  const [weeklyReportResult,  setWeeklyReportResult]  = useState<"ok" | "error" | null>(null);
+
+  async function handleSendWeeklyReport() {
+    setWeeklyReportSending(true);
+    setWeeklyReportResult(null);
+    try {
+      const res = await fetch("/api/notifications/weekly-report", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ transactions }),
+      });
+      const data = await res.json().catch(() => null);
+      setWeeklyReportResult(data?.ok ? "ok" : "error");
+    } catch {
+      setWeeklyReportResult("error");
+    } finally {
+      setWeeklyReportSending(false);
+      setTimeout(() => setWeeklyReportResult(null), 4000);
+    }
+  }
+
   const [aiEnabled,      setAiEnabled]      = useState(true);
   const [autoSuggest,    setAutoSuggest]    = useState(true);
   const [learnOverrides, setLearnOverrides] = useState(true);
@@ -867,6 +891,43 @@ export default function SettingsPage() {
                     )}
                   </div>
                 )}
+              </Card>
+
+              {/* Weekly report */}
+              <Card>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">
+                      {t("settings.weeklyReportTitle")}
+                    </h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
+                      {t("settings.weeklyReportSub")}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                      <Clock size={11} />
+                      {t("settings.weeklyReportSchedule")}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 mt-4">
+                  <Button
+                    size="sm"
+                    onClick={handleSendWeeklyReport}
+                    disabled={weeklyReportSending}
+                  >
+                    {weeklyReportSending ? t("settings.weeklyReportSending") : t("settings.weeklyReportSend")}
+                  </Button>
+                  {weeklyReportResult === "ok" && (
+                    <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                      <Check size={12} /> {t("settings.weeklyReportSent")}
+                    </span>
+                  )}
+                  {weeklyReportResult === "error" && (
+                    <span className="text-xs text-red-500 dark:text-red-400 font-medium">
+                      {t("settings.weeklyReportFail")}
+                    </span>
+                  )}
+                </div>
               </Card>
 
               {/* Notification type toggles with channel selection */}

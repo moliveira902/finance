@@ -1,7 +1,8 @@
 "use client";
+import { useState } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, ComposedChart, Bar, Line,
 } from "recharts";
 import { TrendingUp, TrendingDown, Wallet, CreditCard, Sparkles, ArrowUpRight, RepeatIcon, Clock } from "lucide-react";
 import Link from "next/link";
@@ -102,6 +103,23 @@ function buildCategoryBreakdown(txs: Transaction[]) {
   return Array.from(map.values()).sort((a, b) => b.value - a.value).slice(0, 6);
 }
 
+function buildDailySpending(txs: Transaction[], year: number, month: number) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  return Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const dow = new Date(year, month, day).getDay();
+    const isWeekend = dow === 0 || dow === 6;
+    const amount = txs
+      .filter((t) => {
+        if (t.type !== "expense") return false;
+        const d = new Date(t.date);
+        return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
+      })
+      .reduce((s, t) => s + Math.abs(t.amount), 0);
+    return { day, isWeekend, amount };
+  });
+}
+
 function monthlyRecurringNet(txs: Transaction[]): number {
   const seen = new Set<string>();
   return txs
@@ -123,6 +141,7 @@ function monthlyRecurringNet(txs: Transaction[]): number {
 export default function DashboardPage() {
   const { transactions, accounts, appSettings } = useFinanceStore();
   const { t, locale } = useTranslation();
+  const [compareOffset, setCompareOffset] = useState<1 | 2 | null>(null);
 
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
@@ -143,6 +162,23 @@ export default function DashboardPage() {
   const monthlyTrend      = buildMonthlyTrend(transactions, locale);
   const catBreakdown      = buildCategoryBreakdown(monthTxs);
   const upcomingRecurring = buildUpcomingRecurring(transactions);
+
+  // Daily spending data
+  const dailyCurrent = buildDailySpending(transactions, y, m);
+  const compareDate  = compareOffset !== null ? new Date(y, m - compareOffset, 1) : null;
+  const dailyCompare = compareDate
+    ? buildDailySpending(transactions, compareDate.getFullYear(), compareDate.getMonth())
+    : null;
+  const dailyData = dailyCurrent.map((d, i) => ({
+    ...d,
+    compare: dailyCompare?.[i]?.amount ?? null,
+  }));
+
+  function monthChipLabel(offsetMonths: number) {
+    const d = new Date(y, m - offsetMonths, 1);
+    const label = d.toLocaleString(locale, { month: "short" });
+    return label.charAt(0).toUpperCase() + label.slice(1).replace(".", "");
+  }
 
   return (
     <div className="space-y-6">
@@ -218,6 +254,97 @@ export default function DashboardPage() {
           )}
         </Card>
       </div>
+
+      {/* Daily spending chart */}
+      <Card>
+        <div className="flex flex-col @sm:flex-row @sm:items-center justify-between gap-3 mb-4">
+          <CardLabel>{t("dashboard.dailySpending")}</CardLabel>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCompareOffset(null)}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-medium transition-colors",
+                compareOffset === null
+                  ? "bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300"
+                  : "text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+              )}
+            >
+              {monthChipLabel(0)}
+            </button>
+            <button
+              onClick={() => setCompareOffset(compareOffset === 1 ? null : 1)}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border",
+                compareOffset === 1
+                  ? "bg-violet-50 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300"
+                  : "border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:hover:border-slate-600"
+              )}
+            >
+              {t("dashboard.dailyVs")} {monthChipLabel(1)}
+            </button>
+            <button
+              onClick={() => setCompareOffset(compareOffset === 2 ? null : 2)}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border",
+                compareOffset === 2
+                  ? "bg-violet-50 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300"
+                  : "border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:hover:border-slate-600"
+              )}
+            >
+              {t("dashboard.dailyVs")} {monthChipLabel(2)}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 mb-3">
+          <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+            <span className="w-3 h-3 rounded bg-sky-400" />
+            {t("dashboard.dailyWeekday")}
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-amber-500 dark:text-amber-400">
+            <span className="w-3 h-3 rounded bg-amber-400" />
+            {t("dashboard.dailyWeekend")}
+          </span>
+          {compareOffset !== null && (
+            <span className="flex items-center gap-1.5 text-xs text-violet-500 dark:text-violet-400">
+              <span className="inline-block w-5 border-t-2 border-dashed border-violet-400" />
+              {monthChipLabel(compareOffset)}
+            </span>
+          )}
+        </div>
+
+        <div className="h-52">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={dailyData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} interval={4} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={kFormatter} width={38} />
+              <Tooltip
+                contentStyle={TOOLTIP}
+                formatter={(value: unknown, name: unknown) => [formatBRL(Number(value || 0)), name === "amount" ? t("dashboard.dailyWeekday") : monthChipLabel(compareOffset ?? 1)]}
+                labelFormatter={(label) => `Dia ${label}`}
+              />
+              <Bar dataKey="amount" name="amount" radius={[3, 3, 0, 0]} maxBarSize={14}>
+                {dailyData.map((d, i) => (
+                  <Cell key={i} fill={d.isWeekend ? "#f59e0b" : "#38bdf8"} fillOpacity={d.amount === 0 ? 0.25 : 0.85} />
+                ))}
+              </Bar>
+              {compareOffset !== null && (
+                <Line
+                  type="monotone"
+                  dataKey="compare"
+                  stroke="#8b5cf6"
+                  strokeWidth={2}
+                  dot={false}
+                  strokeDasharray="4 3"
+                  connectNulls={false}
+                  name="compare"
+                />
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
 
       {/* Upcoming recurring */}
       {upcomingRecurring.length > 0 && (
