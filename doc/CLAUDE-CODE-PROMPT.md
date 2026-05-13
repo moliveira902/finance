@@ -30,6 +30,7 @@ The coach must support **two interaction channels**:
 A chat UI embedded in the web app and iOS app. The user types a message,
 the API streams a response, and the conversation history is maintained
 within the session.
+Open AI key has to be available for CRUM in ADMIN configuration via GUI.
 
 ### Channel 2 — Telegram via n8n
 The user sends a message to a Telegram bot. n8n calls a webhook endpoint

@@ -1,13 +1,12 @@
 {
   "name": "financeapp",
   "private": true,
-  "packageManager": "pnpm@10.33.2",
   "scripts": {
     "dev": "pnpm --filter web dev",
     "dev:api": "pnpm --filter @financeapp/api dev",
     "dev:worker": "pnpm --filter @financeapp/worker dev",
     "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:api\" \"pnpm dev:worker\"",
-    "build": "pnpm -r build",
+    "build": "pnpm --filter @financeapp/shared-types build && pnpm --filter @financeapp/api build && pnpm --filter web build",
     "lint": "pnpm --filter web lint",
     "test": "pnpm --filter @financeapp/api test",
     "type-check": "pnpm -r type-check",
@@ -22,4 +21,5 @@
     "apps/*",
     "packages/*"
   ]
+  
 }
