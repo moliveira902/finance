@@ -89,9 +89,12 @@ export async function dispatch(
   );
   const overCap = countSentToday(notifications) >= prefs.notificationPrefs.max_per_day;
 
+  // Respect per-type channel overrides (fall back to both enabled if type unknown)
+  const typeChannels = prefs.notificationPrefs.typeChannels?.[type] ?? { telegram: true, email: false };
+
   // Determine primary channel label for the record
-  const canSendTelegram = hasTelegram && prefs.notificationPrefs.telegram_enabled;
-  const canSendEmail    = hasEmail;
+  const canSendTelegram = hasTelegram && prefs.notificationPrefs.telegram_enabled && typeChannels.telegram;
+  const canSendEmail    = hasEmail && typeChannels.email;
   const primaryChannel: AppNotification["channel"] =
     canSendTelegram && canSendEmail ? "multi"
     : canSendTelegram               ? "telegram"

@@ -131,7 +131,7 @@ export async function POST(request: Request) {
 
   // ── Direct send (mirrors the test button — bypasses KV/anti-spam) ──────────
   const hasTelegram = !!prefs.telegramChatId && !!prefs.telegramBotToken;
-  const hasEmail    = prefs.notificationPrefs.email_enabled && !!prefs.telegramChatId; // email from store profile
+  const hasEmail    = prefs.notificationPrefs.email_enabled;
 
   let telegramSent = false;
   let emailSent    = false;
