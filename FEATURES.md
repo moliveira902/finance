@@ -1,5 +1,15 @@
 # FinanceApp — Release Notes
 
+## v2.2.1 — 2026-05-21
+
+### Familio — Bug Fixes
+
+- **Calendar date fix**: the Familio event now always lands on the configured send day in BRT, not on "today" in UTC. Previously the test button placed the event on the current day (e.g. Wednesday) instead of the configured weekday (e.g. Sunday); the cron was unaffected when running on the correct day but would have drifted after midnight UTC
+- **Note format**: removed Period, Total, and separator lines from the event note — now shows only the per-category breakdown and the week-over-week delta note, separated by a blank line
+- **Deployment protection**: Finance now sends `x-vercel-protection-bypass` header using a dedicated `FAMILIO_BYPASS_TOKEN` env var, separate from the app-level API key
+
+---
+
 ## v2.2.0 — 2026-05-21
 
 ### Familio Integration — Weekly Finance Summary
