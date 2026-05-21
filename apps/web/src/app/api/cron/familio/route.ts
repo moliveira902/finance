@@ -4,8 +4,9 @@ import { getUserPrefs, setUserPrefs } from "@/lib/userPrefs";
 import { getStore, type Transaction } from "@/lib/kv-store";
 import { buildFamilioPayload } from "@/app/api/familio/send/route";
 
-const FAMILIO_ENDPOINT = process.env.FAMILIO_ENDPOINT ?? "https://familio-git-master-moliveira902-5664s-projects.vercel.app/api/finance";
-const FAMILIO_API_KEY  = process.env.FAMILIO_API_KEY  ?? "fam_d3e87d2f030713433d95c7025cd768b989b9c2baa98f8d2c";
+const FAMILIO_ENDPOINT     = process.env.FAMILIO_ENDPOINT     ?? "https://familio-git-master-moliveira902-5664s-projects.vercel.app/api/finance";
+const FAMILIO_API_KEY      = process.env.FAMILIO_API_KEY      ?? "fam_d3e87d2f030713433d95c7025cd768b989b9c2baa98f8d2c";
+const FAMILIO_BYPASS_TOKEN = process.env.FAMILIO_BYPASS_TOKEN ?? "";
 
 export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
@@ -41,15 +42,17 @@ export async function GET(request: Request) {
       const txs    = (store as { transactions: Transaction[] }).transactions ?? [];
       const payload = await buildFamilioPayload(txs, cfg.assignedTo);
 
+      const fetchHeaders: Record<string, string> = {
+        "Content-Type":  "application/json",
+        "x-api-key":     FAMILIO_API_KEY,
+        "Authorization": `Bearer ${FAMILIO_API_KEY}`,
+      };
+      if (FAMILIO_BYPASS_TOKEN) fetchHeaders["x-vercel-protection-bypass"] = FAMILIO_BYPASS_TOKEN;
+
       const res = await fetch(FAMILIO_ENDPOINT, {
         method:  "POST",
-        headers: {
-          "Content-Type":               "application/json",
-          "x-api-key":                  FAMILIO_API_KEY,
-          "Authorization":              `Bearer ${FAMILIO_API_KEY}`,
-          "x-vercel-protection-bypass": FAMILIO_API_KEY,
-        },
-        body: JSON.stringify(payload),
+        headers: fetchHeaders,
+        body:    JSON.stringify(payload),
       });
 
       const ok = res.ok;

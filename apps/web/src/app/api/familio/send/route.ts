@@ -3,8 +3,9 @@ import { getSessionUser } from "@/lib/sessionUser";
 import { getStore, type Transaction } from "@/lib/kv-store";
 import { getUserPrefs, setUserPrefs } from "@/lib/userPrefs";
 
-const FAMILIO_ENDPOINT = process.env.FAMILIO_ENDPOINT ?? "https://familio-git-master-moliveira902-5664s-projects.vercel.app/api/finance";
-const FAMILIO_API_KEY  = process.env.FAMILIO_API_KEY  ?? "fam_d3e87d2f030713433d95c7025cd768b989b9c2baa98f8d2c";
+const FAMILIO_ENDPOINT     = process.env.FAMILIO_ENDPOINT     ?? "https://familio-git-master-moliveira902-5664s-projects.vercel.app/api/finance";
+const FAMILIO_API_KEY      = process.env.FAMILIO_API_KEY      ?? "fam_d3e87d2f030713433d95c7025cd768b989b9c2baa98f8d2c";
+const FAMILIO_BYPASS_TOKEN = process.env.FAMILIO_BYPASS_TOKEN ?? "";
 
 // Returns the Mon–Sun week range for the given offset (0 = current, 1 = previous)
 function getWeekRange(offsetWeeks = 0): { start: Date; end: Date } {
@@ -112,15 +113,17 @@ export async function POST(request: Request) {
   let error       = "";
 
   try {
+    const headers: Record<string, string> = {
+      "Content-Type":  "application/json",
+      "x-api-key":     FAMILIO_API_KEY,
+      "Authorization": `Bearer ${FAMILIO_API_KEY}`,
+    };
+    if (FAMILIO_BYPASS_TOKEN) headers["x-vercel-protection-bypass"] = FAMILIO_BYPASS_TOKEN;
+
     const res = await fetch(FAMILIO_ENDPOINT, {
-      method:  "POST",
-      headers: {
-        "Content-Type":               "application/json",
-        "x-api-key":                  FAMILIO_API_KEY,
-        "Authorization":              `Bearer ${FAMILIO_API_KEY}`,
-        "x-vercel-protection-bypass": FAMILIO_API_KEY,
-      },
-      body: JSON.stringify(payload),
+      method: "POST",
+      headers,
+      body:   JSON.stringify(payload),
     });
     familioBody = await res.text().catch(() => "");
     if (res.ok) {
