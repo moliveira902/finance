@@ -44,9 +44,10 @@ export async function GET(request: Request) {
       const res = await fetch(FAMILIO_ENDPOINT, {
         method:  "POST",
         headers: {
-          "Content-Type":  "application/json",
-          "x-api-key":     FAMILIO_API_KEY,
-          "Authorization": `Bearer ${FAMILIO_API_KEY}`,
+          "Content-Type":               "application/json",
+          "x-api-key":                  FAMILIO_API_KEY,
+          "Authorization":              `Bearer ${FAMILIO_API_KEY}`,
+          "x-vercel-protection-bypass": FAMILIO_API_KEY,
         },
         body: JSON.stringify(payload),
       });
