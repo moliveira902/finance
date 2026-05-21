@@ -2,5 +2,19 @@
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter web build",
-  "outputDirectory": "apps/web/.next"
+  "outputDirectory": "apps/web/.next",
+  "crons": [
+    {
+      "path": "/api/cron/health-score",
+      "schedule": "0 12 1 * *"
+    },
+    {
+      "path": "/api/cron/inactivity",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/familio",
+      "schedule": "0 12 * * *"
+    }
+  ]
 }

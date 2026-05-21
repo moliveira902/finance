@@ -47,6 +47,14 @@ export interface NotificationPrefs {
   inactivityNudge:    { enabled: boolean; thresholdDays: number };
 }
 
+export interface FamilioConfig {
+  enabled:      boolean;
+  sendDay:      number;   // 0=Sun, 1=Mon, … 6=Sat
+  assignedTo:   string;
+  lastSentAt?:  string;   // ISO timestamp of last successful send
+  lastPayload?: string;   // JSON string of last sent payload
+}
+
 export interface UserPrefs {
   telegramChatId?:        string;
   telegramBotToken?:      string;
@@ -54,6 +62,7 @@ export interface UserPrefs {
   streakFreezeUsedMonth?: string; // YYYY-MM
   lastActiveAt?:          string; // ISO timestamp of last app open
   notificationPrefs:      NotificationPrefs;
+  familioConfig?:         FamilioConfig;
 }
 
 const DEFAULT_PREFS: UserPrefs = {

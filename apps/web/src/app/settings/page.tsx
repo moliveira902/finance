@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import {
   User, Bell, CreditCard, Download, Shield, Sparkles, Wallet, Check, Tag,
   Plus, Pencil, Trash2, Users, Link2, Copy, RefreshCw, Send, Mail, Clock,
+  Calendar, Eye, EyeOff,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -282,6 +283,63 @@ export default function SettingsPage() {
     } finally {
       setWeeklyReportSending(false);
       setTimeout(() => { setWeeklyReportResult(null); setWeeklyReportError(null); }, 6000);
+    }
+  }
+
+  // ── Familio integration ──────────────────────────────────────────────────────
+  const [familioEnabled,     setFamilioEnabled]     = useState(false);
+  const [familioSendDay,     setFamilioSendDay]      = useState(0);      // 0=Sun
+  const [familioAssignedTo,  setFamilioAssignedTo]  = useState("");
+  const [familioSaving,      setFamilioSaving]      = useState(false);
+  const [familioSaved,       setFamilioSaved]       = useState(false);
+  const [familioTesting,     setFamilioTesting]     = useState(false);
+  const [familioTestResult,  setFamilioTestResult]  = useState<{ ok: boolean; payload?: unknown; error?: string } | null>(null);
+  const [familioLastPayload, setFamilioLastPayload] = useState<string | null>(null);
+  const [showPayload,        setShowPayload]        = useState(false);
+
+  useEffect(() => {
+    if (tab !== "integrations") return;
+    fetch("/api/familio/config", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { familioConfig?: { enabled: boolean; sendDay: number; assignedTo: string; lastPayload?: string } } | null) => {
+        if (!d?.familioConfig) return;
+        setFamilioEnabled(d.familioConfig.enabled);
+        setFamilioSendDay(d.familioConfig.sendDay ?? 0);
+        setFamilioAssignedTo(d.familioConfig.assignedTo ?? "");
+        setFamilioLastPayload(d.familioConfig.lastPayload ?? null);
+      })
+      .catch(() => {});
+  }, [tab]);
+
+  async function handleSaveFamilio() {
+    setFamilioSaving(true);
+    await fetch("/api/familio/config", {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ enabled: familioEnabled, sendDay: familioSendDay, assignedTo: familioAssignedTo }),
+    }).catch(() => {});
+    setFamilioSaving(false);
+    setFamilioSaved(true);
+    setTimeout(() => setFamilioSaved(false), 2500);
+  }
+
+  async function handleTestFamilio() {
+    setFamilioTesting(true);
+    setFamilioTestResult(null);
+    try {
+      const res  = await fetch("/api/familio/send", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ assignedTo: familioAssignedTo }),
+      });
+      const data = await res.json() as { ok: boolean; payload?: unknown; error?: string };
+      setFamilioTestResult(data);
+      if (data.payload) setFamilioLastPayload(JSON.stringify(data.payload, null, 2));
+    } catch {
+      setFamilioTestResult({ ok: false, error: "Erro de rede" });
+    } finally {
+      setFamilioTesting(false);
+      setTimeout(() => setFamilioTestResult(null), 8000);
     }
   }
 
@@ -1099,6 +1157,102 @@ export default function SettingsPage() {
                   <div className="pt-1 text-xs text-slate-400 dark:text-slate-500">
                     Para alterar a chave, defina a variável de ambiente <code className="text-slate-500">INGEST_API_KEY</code> e reinicie o servidor.
                   </div>
+                </div>
+              </div>
+
+              {/* ── Familio ── */}
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden mt-4">
+                <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Calendar size={15} className="text-slate-400" />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Familio</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                        Envio automático do resumo semanal de gastos para o app de família.
+                      </p>
+                    </div>
+                  </div>
+                  <Toggle enabled={familioEnabled} onChange={(v) => setFamilioEnabled(v)} />
+                </div>
+
+                <div className="px-5 py-4 space-y-4">
+                  {/* Day of week */}
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Dia de envio</p>
+                    <select
+                      value={familioSendDay}
+                      onChange={(e) => setFamilioSendDay(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 transition-colors"
+                    >
+                      {["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"].map((d, i) => (
+                        <option key={i} value={i}>{d}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">O resumo da semana anterior é enviado neste dia às 09h (BRT).</p>
+                  </div>
+
+                  {/* Assigned to */}
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Atribuído a</p>
+                    <input
+                      value={familioAssignedTo}
+                      onChange={(e) => setFamilioAssignedTo(e.target.value)}
+                      placeholder="Ex: Marcio"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 transition-colors"
+                    />
+                    <p className="text-xs text-slate-400 dark:text-slate-500">Nome do membro Familio que receberá o relatório.</p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <Button size="sm" onClick={handleSaveFamilio} disabled={familioSaving}>
+                      {familioSaving ? <RefreshCw size={12} className="animate-spin" /> : null}
+                      Salvar
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={handleTestFamilio} disabled={familioTesting}>
+                      {familioTesting
+                        ? <><RefreshCw size={12} className="animate-spin" /> Enviando…</>
+                        : <><Send size={12} /> Testar envio</>
+                      }
+                    </Button>
+                    {familioLastPayload && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPayload((v) => !v)}
+                        className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors"
+                      >
+                        {showPayload ? <EyeOff size={12} /> : <Eye size={12} />}
+                        {showPayload ? "Ocultar payload" : "Ver último payload"}
+                      </button>
+                    )}
+                    {familioSaved && (
+                      <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                        <Check size={12} /> Salvo
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Test result */}
+                  {familioTestResult && (
+                    <div className={cn(
+                      "px-3 py-2.5 rounded-xl text-xs font-medium border",
+                      familioTestResult.ok
+                        ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
+                        : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400"
+                    )}>
+                      {familioTestResult.ok ? "✓ Enviado com sucesso ao Familio!" : `✗ Erro: ${familioTestResult.error}`}
+                    </div>
+                  )}
+
+                  {/* Last payload */}
+                  {showPayload && familioLastPayload && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Último payload enviado</p>
+                      <pre className="px-3 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-mono text-slate-600 dark:text-slate-400 overflow-x-auto whitespace-pre-wrap">
+                        {familioLastPayload}
+                      </pre>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
