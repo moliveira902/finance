@@ -40,7 +40,7 @@ export async function GET(request: Request) {
 
       const store  = await getStore(u.id);
       const txs    = (store as { transactions: Transaction[] }).transactions ?? [];
-      const payload = await buildFamilioPayload(txs, cfg.assignedTo);
+      const payload = await buildFamilioPayload(txs, cfg.assignedTo, cfg.sendDay);
 
       const fetchHeaders: Record<string, string> = {
         "Content-Type":  "application/json",

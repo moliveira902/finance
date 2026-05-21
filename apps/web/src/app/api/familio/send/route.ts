@@ -25,6 +25,18 @@ function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Returns the BRT (UTC-3) date string for the next occurrence of sendDay
+// (0=Sun … 6=Sat). Returns today's BRT date if today already matches.
+function brtDateForSendDay(sendDay: number): string {
+  const nowUtc   = new Date();
+  const nowBrt   = new Date(nowUtc.getTime() - 3 * 60 * 60 * 1000);
+  const todayDow = nowBrt.getDay();
+  const ahead    = (sendDay - todayDow + 7) % 7;
+  const target   = new Date(nowBrt);
+  target.setDate(nowBrt.getDate() + ahead);
+  return target.toISOString().slice(0, 10);
+}
+
 function filterExpenses(txs: Transaction[], start: Date, end: Date): Transaction[] {
   return txs.filter((t) => {
     if (t.type !== "expense") return false;
@@ -66,12 +78,13 @@ export interface FamilioPayload {
 export async function buildFamilioPayload(
   txs: Transaction[],
   assignedTo: string,
+  sendDay = 0,
 ): Promise<FamilioPayload> {
   const thisWeek = getWeekRange(0);
   const prevWeek = getWeekRange(1);
 
-  const thisTxs  = filterExpenses(txs, thisWeek.start, thisWeek.end);
-  const prevTxs  = filterExpenses(txs, prevWeek.start, prevWeek.end);
+  const thisTxs   = filterExpenses(txs, thisWeek.start, thisWeek.end);
+  const prevTxs   = filterExpenses(txs, prevWeek.start, prevWeek.end);
   const thisTotal = thisTxs.reduce((s, t) => s + Math.abs(t.amount), 0);
   const prevTotal = prevTxs.reduce((s, t) => s + Math.abs(t.amount), 0);
 
@@ -87,7 +100,7 @@ export async function buildFamilioPayload(
       })),
       note: buildNote(thisTotal, prevTotal),
     },
-    date:       isoDate(new Date()),
+    date:       brtDateForSendDay(sendDay),
     assignedTo: assignedTo || "Family",
   };
 }
@@ -104,9 +117,10 @@ export async function POST(request: Request) {
     if (body.assignedTo !== undefined) assignedTo = body.assignedTo;
   } catch { /* body is optional */ }
 
-  const store  = await getStore(user.id);
-  const txs    = (store as { transactions: Transaction[] }).transactions ?? [];
-  const payload = await buildFamilioPayload(txs, assignedTo);
+  const sendDay = prefs.familioConfig?.sendDay ?? 0;
+  const store   = await getStore(user.id);
+  const txs     = (store as { transactions: Transaction[] }).transactions ?? [];
+  const payload = await buildFamilioPayload(txs, assignedTo, sendDay);
 
   let familioOk   = false;
   let familioBody = "";
