@@ -1,5 +1,19 @@
 # FinanceApp — Release Notes
 
+## v2.2.0 — 2026-05-21
+
+### Familio Integration — Weekly Finance Summary
+
+- **Familio card in Settings → Integrations**: new section to configure the weekly expense summary sent to the Familio family scheduler
+- **Day-of-week selector**: choose any day of the week for the automated send (default: Sunday); dispatch runs daily at 09:00 BRT and fires only on the configured day
+- **Assigned-to field**: set which Familio family member receives the event (e.g. "Marcio")
+- **Test-send button**: sends the current week's summary to Familio immediately without waiting for the scheduled day
+- **Last-payload viewer**: toggle to inspect the exact JSON payload sent on the most recent dispatch
+- **Cron job**: `/api/cron/familio` added to `vercel.json` — runs daily at 12:00 UTC (09:00 BRT) alongside the existing inactivity-nudge cron
+- **Payload format**: sends `summary.categories` with per-category BRL amounts, a delta note (e.g. "8% above last week"), and the dispatch date
+
+---
+
 ## v2.1.0 — 2026-05-06
 
 ### Language Toggle, Notification Channels & UX Polish
