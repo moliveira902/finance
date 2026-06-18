@@ -120,7 +120,7 @@ export function MobileFrame({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Scrollable content */}
-              <div className="flex-1 overflow-y-auto scrollbar-hide px-4 pt-3 pb-4 @container">
+              <div className="flex-1 overflow-y-auto scrollbar-hide px-3 pt-3 pb-4 @container">
                 {children}
               </div>
 
@@ -153,7 +153,7 @@ export function RealMobileLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Scrollable page content */}
-      <main className="flex-1 px-4 py-5 @container">
+      <main className="flex-1 px-3 py-4 @container">
         {children}
       </main>
     </div>

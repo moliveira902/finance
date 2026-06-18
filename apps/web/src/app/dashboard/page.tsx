@@ -2,7 +2,7 @@
 import { useState } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, ComposedChart, Bar, Line,
+  PieChart, Pie, Cell, ComposedChart, Bar, Line, BarChart,
 } from "recharts";
 import { TrendingUp, TrendingDown, Wallet, CreditCard, Sparkles, ArrowUpRight, RepeatIcon, Clock } from "lucide-react";
 import Link from "next/link";
@@ -94,13 +94,28 @@ function buildUpcomingRecurring(all: Transaction[]) {
 }
 
 function buildCategoryBreakdown(txs: Transaction[]) {
-  const map = new Map<string, { name: string; value: number; color: string }>();
+  const map = new Map<string, { id: string; name: string; value: number; color: string }>();
   txs.filter((t) => t.type === "expense").forEach((t) => {
     const key = t.category.id;
-    const prev = map.get(key) ?? { name: t.category.name, value: 0, color: t.category.color };
+    const prev = map.get(key) ?? { id: key, name: t.category.name, value: 0, color: t.category.color };
     map.set(key, { ...prev, value: prev.value + Math.abs(t.amount) });
   });
   return Array.from(map.values()).sort((a, b) => b.value - a.value).slice(0, 6);
+}
+
+function buildDailyCategorySpending(txs: Transaction[], year: number, month: number, categoryId: string) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  return Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const amount = txs
+      .filter((t) => {
+        if (t.type !== "expense" || t.category.id !== categoryId) return false;
+        const d = new Date(t.date);
+        return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
+      })
+      .reduce((s, t) => s + Math.abs(t.amount), 0);
+    return { day, amount };
+  });
 }
 
 function buildDailySpending(txs: Transaction[], year: number, month: number) {
@@ -139,9 +154,10 @@ function monthlyRecurringNet(txs: Transaction[]): number {
 }
 
 export default function DashboardPage() {
-  const { transactions, accounts, appSettings } = useFinanceStore();
+  const { transactions, accounts, appSettings, categories } = useFinanceStore();
   const { t, locale } = useTranslation();
   const [compareOffset, setCompareOffset] = useState<1 | 2 | null>(null);
+  const [selectedCatId, setSelectedCatId] = useState<string>(() => categories[0]?.id ?? "");
 
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
@@ -174,6 +190,12 @@ export default function DashboardPage() {
     compare: dailyCompare?.[i]?.amount ?? null,
   }));
 
+  // Daily spending by category
+  const selectedCat = categories.find((c) => c.id === selectedCatId);
+  const dailyCatData = selectedCatId
+    ? buildDailyCategorySpending(transactions, y, m, selectedCatId)
+    : [];
+
   function monthChipLabel(offsetMonths: number) {
     const d = new Date(y, m - offsetMonths, 1);
     const label = d.toLocaleString(locale, { month: "short" });
@@ -181,11 +203,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 @sm:space-y-6">
       <PageHeader title={t("dashboard.title")} subtitle={t("dashboard.subtitle", { month: monthLabel })} />
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 @3xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 @xl:grid-cols-2 @3xl:grid-cols-4 gap-3 @sm:gap-4">
         <KpiCard label={t("dashboard.netWorth")} value={formatBRL(netWorth)}
           sub={t("dashboard.netWorthSub", { sign: monthlyFixedNet >= 0 ? "+" : "−", value: formatBRL(Math.abs(monthlyFixedNet)) })} />
         <KpiCard label={t("dashboard.monthlyIncome")}   value={formatBRL(income)}        sub={t("dashboard.incomeSub")}    />
@@ -197,7 +219,7 @@ export default function DashboardPage() {
       {appSettings?.healthScoreEnabled !== false && <ScoreWidget />}
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-3 @sm:gap-4">
         <Card className="@3xl:col-span-2">
           <CardLabel className="mb-4">{t("dashboard.cashFlow")}</CardLabel>
           <div className="h-52">
@@ -346,6 +368,49 @@ export default function DashboardPage() {
         </div>
       </Card>
 
+      {/* Daily expenses by category */}
+      <Card>
+        <div className="flex flex-col @sm:flex-row @sm:items-center justify-between gap-3 mb-4">
+          <CardLabel>{t("dashboard.categoryDaily")}</CardLabel>
+          <select
+            value={selectedCatId}
+            onChange={(e) => setSelectedCatId(e.target.value)}
+            className="h-8 max-w-[200px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs px-2.5 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-1 dark:focus:ring-offset-slate-900"
+          >
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.icon} {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {dailyCatData.every((d) => d.amount === 0) ? (
+          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-8">{t("dashboard.noExpenses")}</p>
+        ) : (
+          <div className="h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dailyCatData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} interval={4} />
+                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={kFormatter} width={38} />
+                <Tooltip
+                  contentStyle={TOOLTIP}
+                  formatter={(v) => [formatBRL(Number(v || 0))]}
+                  labelFormatter={(l) => `Dia ${l}`}
+                />
+                <Bar
+                  dataKey="amount"
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={14}
+                  fill={selectedCat?.color ?? "#38bdf8"}
+                  fillOpacity={0.85}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </Card>
+
       {/* Upcoming recurring */}
       {upcomingRecurring.length > 0 && (
         <Card>
@@ -388,7 +453,7 @@ export default function DashboardPage() {
       )}
 
       {/* Accounts + Recent */}
-      <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-3 @sm:gap-4">
         <Card>
           <CardLabel className="mb-4">{t("dashboard.accounts")}</CardLabel>
           <div className="space-y-3">
