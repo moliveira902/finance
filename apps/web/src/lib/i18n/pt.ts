@@ -4,6 +4,7 @@ export const pt = {
     transactions:"Transações",
     recurring:   "Recorrentes",
     reports:     "Relatórios",
+    categories:  "Categorias",
     advisor:     "Meu Consultor",
     settings:    "Configurações",
     healthScore: "Saúde financeira",
@@ -68,6 +69,7 @@ export const pt = {
     dailyWeekday:   "Dia útil",
     dailyWeekend:   "Fim de semana",
     dailyVs:        "vs",
+    categoryDaily:  "Gastos Diários por Categoria",
   },
   transactions: {
     title:          "Transações",
@@ -327,6 +329,18 @@ export const pt = {
   household: {
     title:    "Casa",
     subtitle: "Visão financeira do casal",
+  },
+  categories: {
+    title:              "Categorias",
+    subtitle:           "{total} categorias · {custom} personalizadas",
+    addBtn:             "Nova Categoria",
+    systemLabel:        "Do sistema",
+    customLabel:        "Personalizadas",
+    systemBadge:        "Sistema",
+    emptyCustom:        "Você ainda não tem categorias personalizadas.",
+    createFirst:        "Criar minha primeira categoria",
+    confirmDeleteTitle: "Excluir categoria",
+    confirmDeleteDesc:  "Tem certeza que deseja excluir \"{name}\"? Esta ação não pode ser desfeita.",
   },
   auth: {
     loginTitle:    "Bem-vindo ao FinanceApp",

@@ -4,6 +4,7 @@ export const en = {
     transactions:"Transactions",
     recurring:   "Recurring",
     reports:     "Reports",
+    categories:  "Categories",
     advisor:     "My Advisor",
     settings:    "Settings",
     healthScore: "Financial Health",
@@ -68,6 +69,7 @@ export const en = {
     dailyWeekday:   "Weekday",
     dailyWeekend:   "Weekend",
     dailyVs:        "vs",
+    categoryDaily:  "Daily Expenses by Category",
   },
   transactions: {
     title:          "Transactions",
@@ -327,6 +329,18 @@ export const en = {
   household: {
     title:    "Household",
     subtitle: "Couple financial overview",
+  },
+  categories: {
+    title:              "Categories",
+    subtitle:           "{total} categories · {custom} custom",
+    addBtn:             "New Category",
+    systemLabel:        "System",
+    customLabel:        "Custom",
+    systemBadge:        "System",
+    emptyCustom:        "You have no custom categories yet.",
+    createFirst:        "Create my first category",
+    confirmDeleteTitle: "Delete category",
+    confirmDeleteDesc:  "Are you sure you want to delete \"{name}\"? This cannot be undone.",
   },
   auth: {
     loginTitle:    "Welcome to FinanceApp",

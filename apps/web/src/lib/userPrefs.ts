@@ -61,6 +61,7 @@ export interface UserPrefs {
   telegramConnectedAt?:   string;
   streakFreezeUsedMonth?: string; // YYYY-MM
   lastActiveAt?:          string; // ISO timestamp of last app open
+  lastNudgedAt?:          string; // ISO timestamp of last inactivity nudge sent
   notificationPrefs:      NotificationPrefs;
   familioConfig?:         FamilioConfig;
 }

@@ -40,9 +40,10 @@ export async function GET(request: Request) {
     await setStore(user.id, data);
   }
 
-  // Track last active timestamp (fire-and-forget)
+  // Track last active timestamp — must be awaited; fire-and-forget is killed by
+  // Vercel serverless before the Redis write completes, leaving lastActiveAt stale.
   if (isKvConfigured()) {
-    setUserPrefs(user.id, { lastActiveAt: new Date().toISOString() }).catch(() => {});
+    await setUserPrefs(user.id, { lastActiveAt: new Date().toISOString() }).catch(() => {});
   }
 
   return NextResponse.json({ data });
@@ -58,6 +59,7 @@ export async function PUT(request: Request) {
     await Promise.all([
       kvDel(`coach:context:${user.id}`),
       kvDel(`health_score:${user.id}`),
+      setUserPrefs(user.id, { lastActiveAt: new Date().toISOString() }),
     ]);
   }
   return NextResponse.json({ ok: true });

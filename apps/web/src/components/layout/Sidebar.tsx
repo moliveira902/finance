@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
   LayoutDashboard, ArrowLeftRight, RepeatIcon,
-  BarChart2, Settings, LogOut, Wallet, ShieldCheck, Bot, Home, Activity,
+  BarChart2, Settings, LogOut, Wallet, ShieldCheck, Bot, Home, Activity, Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFinanceStore } from "@/stores/financeStore";
@@ -33,6 +33,7 @@ const NAV_KEYS = [
   { key: "transactions", href: "/transactions", icon: ArrowLeftRight  },
   { key: "recurring",    href: "/recorrentes",  icon: RepeatIcon      },
   { key: "reports",      href: "/reports",      icon: BarChart2       },
+  { key: "categories",   href: "/categories",   icon: Tag             },
   { key: "advisor",      href: "/coach",        icon: Bot             },
   { key: "settings",     href: "/settings",     icon: Settings        },
 ] as const;

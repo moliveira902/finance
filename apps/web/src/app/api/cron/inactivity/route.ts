@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAllUsers } from "@/lib/users";
-import { getUserPrefs } from "@/lib/userPrefs";
+import { getUserPrefs, setUserPrefs } from "@/lib/userPrefs";
 import { dispatch } from "@/lib/notificationService";
 import { Templates } from "@/lib/notificationTemplates";
 import { getStore } from "@/lib/kv-store";
@@ -47,11 +47,22 @@ export async function GET(request: Request) {
         continue;
       }
 
+      // Don't re-nudge if a nudge was already sent within the last thresholdDays days.
+      // This prevents repeated daily nudges while the user remains inactive.
+      if (prefs.lastNudgedAt) {
+        const daysSinceNudge = Math.floor((now - new Date(prefs.lastNudgedAt).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysSinceNudge < inactivity.thresholdDays) {
+          results.push({ userId: u.id, action: `skipped:nudged_${daysSinceNudge}d_ago` });
+          continue;
+        }
+      }
+
       const store = await getStore(u.id);
       const name = store.profile.name || u.name || u.username;
 
       const message = Templates.INACTIVITY_NUDGE(name, dayOfMonth, daysSince);
       await dispatch(u.id, "INACTIVITY_NUDGE", message, { daysSince, dayOfMonth });
+      await setUserPrefs(u.id, { lastNudgedAt: new Date().toISOString() });
       results.push({ userId: u.id, action: `nudged:${daysSince}d` });
     } catch (e) {
       results.push({ userId: u.id, action: "error", error: String(e) });
