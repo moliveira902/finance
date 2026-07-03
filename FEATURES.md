@@ -1,5 +1,15 @@
 # FinanceApp — Release Notes
 
+## v2.3.0 — 2026-07-03
+
+### Recorrentes — Total Real & Mobile Menu
+
+- **Total commitment fix**: the "Total" figure on the Recorrentes page (both the per-card value and the top KPI) now sums the actual remaining installments instead of always projecting 12 months — e.g. a 6-installment expense totals 6× the amount, not a full year
+- **Ongoing recurrences unaffected**: entries without a defined installment count still use the 12-month estimate, since there's no fixed end date to bound the total
+- **Mobile bottom nav**: removed the Settings shortcut from the mobile tab bar — only Dashboard, Transactions, Recorrentes, and Reports remain
+
+---
+
 ## v2.2.1 — 2026-05-21
 
 ### Familio — Bug Fixes

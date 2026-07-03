@@ -5,9 +5,19 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const CURRENT_VERSION = "2.2.0";
+export const CURRENT_VERSION = "2.3.0";
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "2.3.0",
+    date: "2026-07-03",
+    title: "Recorrentes: Total Real & Menu Mobile",
+    items: [
+      "Recorrentes: o card de 'Total' (e o KPI no topo da página) agora soma o valor real das parcelas restantes em vez de projetar sempre 12 meses — uma despesa de 6x só conta 6 parcelas, não um ano inteiro",
+      "Recorrentes: para despesas contínuas (sem número de parcelas definido), a estimativa de 12 meses continua sendo usada como referência",
+      "Menu inferior mobile: removido o atalho para Configurações, mantendo apenas Dashboard, Transações, Recorrentes e Relatórios",
+    ],
+  },
   {
     version: "2.2.0",
     date: "2026-05-06",

@@ -17,6 +17,13 @@ function monthlyEquivalent(tx: Transaction): number {
     : Math.abs(tx.amount);
 }
 
+// Total the recurrence will actually amount to: bounded by the installment
+// count when known, otherwise a 12-month estimate for ongoing/indefinite ones.
+function totalCommitment(tx: Transaction): number {
+  const count = tx.recurringCount && tx.recurringCount > 0 ? tx.recurringCount : null;
+  return count ? Math.abs(tx.amount) * count : monthlyEquivalent(tx) * 12;
+}
+
 export default function RecorrentesPage() {
   const { transactions, deleteTransaction } = useFinanceStore();
   const { t } = useTranslation();
@@ -42,7 +49,16 @@ export default function RecorrentesPage() {
     .reduce((s, tx) => s + monthlyEquivalent(tx), 0);
 
   const monthlyNet = monthlyIncome - monthlyExpenses;
-  const annualNet  = monthlyNet * 12;
+
+  const totalExpenses = templates
+    .filter((tx) => tx.type === "expense")
+    .reduce((s, tx) => s + totalCommitment(tx), 0);
+
+  const totalIncome = templates
+    .filter((tx) => tx.type === "income")
+    .reduce((s, tx) => s + totalCommitment(tx), 0);
+
+  const totalNet = totalIncome - totalExpenses;
 
   return (
     <div className="space-y-5">
@@ -77,8 +93,8 @@ export default function RecorrentesPage() {
         </div>
         <div className="bg-white dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-sm p-3">
           <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide truncate">{t("recurring.annualImpact")}</p>
-          <p className={cn("text-base font-bold tabular-nums mt-0.5 truncate", annualNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400")}>
-            {annualNet >= 0 ? "+" : "−"}{formatBRL(Math.abs(annualNet))}
+          <p className={cn("text-base font-bold tabular-nums mt-0.5 truncate", totalNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400")}>
+            {totalNet >= 0 ? "+" : "−"}{formatBRL(Math.abs(totalNet))}
           </p>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">{t("recurring.annualSubtitle")}</p>
         </div>
@@ -96,8 +112,7 @@ export default function RecorrentesPage() {
       ) : (
         <div className="grid grid-cols-1 @2xl:grid-cols-2 gap-3">
           {templates.map((tx) => {
-            const monthly = monthlyEquivalent(tx);
-            const annual  = monthly * 12;
+            const total   = totalCommitment(tx);
             const count   = tx.recurringCount && tx.recurringCount > 0 ? tx.recurringCount : null;
             const periodLabel = tx.recurringPeriod === "yearly"
               ? (count === 1 ? t("recurring.year") : t("recurring.years"))
@@ -159,17 +174,17 @@ export default function RecorrentesPage() {
                     </span>
                   </div>
 
-                  {/* Col 2 — monthly or annual equivalent */}
+                  {/* Col 2 — total commitment (bounded by installment count) */}
                   <div className="min-w-0">
                     <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5 truncate">
-                      {tx.recurringPeriod === "yearly" ? t("recurring.equivMonth") : t("recurring.annualImpactCard")}
+                      {t("recurring.annualImpactCard")}
                     </p>
                     <span className={cn(
                       "text-sm font-semibold tabular-nums flex items-center gap-0.5 truncate",
                       tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                     )}>
                       {tx.type === "income" ? <TrendingUp size={10} className="shrink-0" /> : <TrendingDown size={10} className="shrink-0" />}
-                      {tx.recurringPeriod === "yearly" ? formatBRL(monthly) : formatBRL(annual)}
+                      {formatBRL(total)}
                     </span>
                   </div>
 
@@ -190,18 +205,6 @@ export default function RecorrentesPage() {
                     )}
                   </div>
                 </div>
-
-                {/* Total commitment — only when count is set */}
-                {count && (
-                  <div className="flex items-center justify-between mt-2.5 px-2.5 py-1.5 rounded-lg bg-sky-50/60 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-900/40">
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                      {t("recurring.totalLabel", { n: String(count), period: periodLabel })}
-                    </span>
-                    <span className="text-sm font-bold tabular-nums text-sky-700 dark:text-sky-300 ml-2 shrink-0">
-                      {formatBRL(Math.abs(tx.amount) * count)}
-                    </span>
-                  </div>
-                )}
               </Card>
             );
           })}

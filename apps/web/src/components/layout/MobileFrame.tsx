@@ -1,7 +1,7 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, ArrowLeftRight, RepeatIcon, BarChart2, Settings,
+  LayoutDashboard, ArrowLeftRight, RepeatIcon, BarChart2,
   Wifi, Signal, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,6 @@ const NAV_ROUTES = [
   { href: "/transactions", icon: ArrowLeftRight,  key: "transactions" },
   { href: "/recorrentes",  icon: RepeatIcon,      key: "recurring"    },
   { href: "/reports",      icon: BarChart2,       key: "reports"      },
-  { href: "/settings",     icon: Settings,        key: "settings"     },
 ];
 
 function NavTabs({ compact = false }: { compact?: boolean }) {
