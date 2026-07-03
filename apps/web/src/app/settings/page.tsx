@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import {
   User, Bell, CreditCard, Download, Shield, Sparkles, Wallet, Check, Tag,
   Plus, Pencil, Trash2, Users, Link2, Copy, RefreshCw, Send, Mail, Clock,
-  Calendar, Eye, EyeOff,
+  Calendar, Eye, EyeOff, Moon, Sun,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +17,7 @@ import type { Account, Category, Member } from "@/lib/mock-data";
 import type { Household } from "@/lib/household";
 import { useNotificationPrefs } from "@/hooks/useHealthScore";
 import { useTranslation } from "@/contexts/LanguageContext";
+import { useAppContext } from "@/contexts/AppContext";
 
 type Tab = "profile" | "members" | "accounts" | "categories" | "notifications" | "ai" | "integrations" | "data";
 
@@ -173,6 +174,7 @@ export default function SettingsPage() {
     INACTIVITY_NUDGE:            t("notifTypes.INACTIVITY_NUDGE"),
   };
 
+  const { theme, toggleTheme } = useAppContext();
   const [tab, setTab] = useState<Tab>("profile");
 
   // Profile form state (controlled, synced from store)
@@ -452,20 +454,34 @@ export default function SettingsPage() {
       <PageHeader title={t("settings.title")} subtitle={t("settings.subtitle")} />
 
       <div className="flex flex-col @3xl:flex-row gap-6 items-start">
-        {/* Tab sidebar */}
-        <nav className="w-full @3xl:w-52 shrink-0 flex @3xl:flex-col gap-1 overflow-x-auto pb-1 @3xl:pb-0">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button key={id} onClick={() => setTab(id)}
-              className={cn(
-                "flex items-center gap-2 shrink-0 @3xl:w-full h-9 px-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
-                tab === id
-                  ? "bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400"
-                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
-              )}>
-              <Icon size={15} className={cn("shrink-0", tab === id ? "text-sky-500" : "text-slate-400 dark:text-slate-500")} />
-              {label}
-            </button>
-          ))}
+        {/* Tab nav — dropdown on small containers, sidebar on large */}
+        <nav className="w-full @3xl:w-52 shrink-0">
+          {/* Mobile dropdown (shown below @sm ≈ 384px) */}
+          <select
+            value={tab}
+            onChange={(e) => setTab(e.target.value as Tab)}
+            className="flex @sm:hidden w-full h-10 pl-3 pr-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-900/50 focus:border-sky-400 dark:focus:border-sky-500 appearance-none cursor-pointer"
+          >
+            {TABS.map(({ id, label }) => (
+              <option key={id} value={id}>{label}</option>
+            ))}
+          </select>
+
+          {/* Desktop button list (shown at @sm and above) */}
+          <div className="hidden @sm:flex @3xl:flex-col gap-1 overflow-x-auto pb-1 @3xl:pb-0">
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button key={id} onClick={() => setTab(id)}
+                className={cn(
+                  "flex items-center gap-2 shrink-0 @3xl:w-full h-9 px-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
+                  tab === id
+                    ? "bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
+                )}>
+                <Icon size={15} className={cn("shrink-0", tab === id ? "text-sky-500" : "text-slate-400 dark:text-slate-500")} />
+                {label}
+              </button>
+            ))}
+          </div>
         </nav>
 
         <div className="flex-1 min-w-0 space-y-4">
@@ -567,6 +583,36 @@ export default function SettingsPage() {
                   )}
                 >
                   {t("settings.langEn")}
+                </button>
+              </div>
+            </Card>
+
+            {/* ── Tema ── */}
+            <Card>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Tema</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Escolha entre modo claro e escuro.</p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => theme !== "light" && toggleTheme()}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors",
+                    theme === "light"
+                      ? "border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400"
+                      : "border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300 dark:hover:border-slate-600"
+                  )}
+                >
+                  <Sun size={14} /> Claro
+                </button>
+                <button
+                  onClick={() => theme !== "dark" && toggleTheme()}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors",
+                    theme === "dark"
+                      ? "border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400"
+                      : "border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300 dark:hover:border-slate-600"
+                  )}
+                >
+                  <Moon size={14} /> Escuro
                 </button>
               </div>
             </Card>
