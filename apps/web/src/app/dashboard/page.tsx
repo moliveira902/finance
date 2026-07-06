@@ -4,12 +4,13 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, ComposedChart, Bar, Line, BarChart,
 } from "recharts";
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Sparkles, ArrowUpRight, RepeatIcon, Clock } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Sparkles, ArrowUpRight, RepeatIcon, Clock, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardLabel, CardValue } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ScoreWidget } from "@/components/dashboard/ScoreWidget";
+import { TransactionModal } from "@/components/modals/TransactionModal";
 import { useFinanceStore } from "@/stores/financeStore";
 import { formatBRL, formatDate, type Transaction } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -154,10 +155,11 @@ function monthlyRecurringNet(txs: Transaction[]): number {
 }
 
 export default function DashboardPage() {
-  const { transactions, accounts, appSettings, categories } = useFinanceStore();
+  const { transactions, accounts, appSettings, categories, deleteTransaction } = useFinanceStore();
   const { t, locale } = useTranslation();
   const [compareOffset, setCompareOffset] = useState<1 | 2 | null>(null);
   const [selectedCatId, setSelectedCatId] = useState<string>(() => categories[0]?.id ?? "");
+  const [editing, setEditing] = useState<Transaction | null>(null);
 
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
@@ -490,11 +492,11 @@ export default function DashboardPage() {
           ) : (
             <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
               {recent.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between py-2.5">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg leading-none">{tx.category.icon}</span>
-                    <div>
-                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{tx.description}</p>
+                <div key={tx.id} className="flex items-center justify-between py-2.5 gap-2 group">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-lg leading-none shrink-0">{tx.category.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{tx.description}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="text-xs text-slate-400 dark:text-slate-500">{formatDate(tx.date)}</span>
                         {tx.aiCategory && (
@@ -505,16 +507,30 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   </div>
-                  <span className={cn("text-sm font-semibold tabular-nums",
-                    tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>
-                    {tx.type === "income" ? "+" : "−"}{formatBRL(Math.abs(tx.amount))}
-                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className={cn("text-sm font-semibold tabular-nums",
+                      tx.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-800 dark:text-slate-200")}>
+                      {tx.type === "income" ? "+" : "−"}{formatBRL(Math.abs(tx.amount))}
+                    </span>
+                    <button
+                      onClick={() => setEditing(tx)}
+                      className="p-1.5 rounded-lg text-slate-300 dark:text-slate-600 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/30 opacity-0 group-hover:opacity-100 transition-colors">
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      onClick={() => deleteTransaction(tx.id)}
+                      className="p-1.5 rounded-lg text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 opacity-0 group-hover:opacity-100 transition-colors">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </Card>
       </div>
+
+      <TransactionModal open={!!editing} onClose={() => setEditing(null)} initial={editing ?? undefined} />
     </div>
   );
 }

@@ -162,6 +162,7 @@ export async function POST(request: Request) {
   // 7 ── Load store, apply all items, persist once
   const store: StoreData = await getStore(targetUserId);
   let queued = 0;
+  let skipped = 0;
 
   for (const t of items) {
     const type         = resolveType(t.type);
@@ -170,21 +171,36 @@ export async function POST(request: Request) {
     const category     = findOrCreateCategory(store.categories, categoryName);
     const account      = findOrCreateAccount(store.accounts, accountName);
 
+    // Expenses are stored as negative numbers — matches UI convention
+    const signedAmount = (t.amount as number) * (type === "income" ? 1 : -1);
+    const date         = (t.date as string).slice(0, 10);
+    const description  = optString(t.description) ?? "Transação";
+
+    // Skip if an entry with the same day + amount + description already exists for this user
+    const isDuplicate = store.transactions.some((existing) =>
+      existing.date === date &&
+      existing.amount === signedAmount &&
+      existing.description.trim().toLowerCase() === description.trim().toLowerCase()
+    );
+
+    if (isDuplicate) {
+      skipped++;
+      log("duplicate_skipped", { ip, amount: signedAmount, date, description });
+      continue;
+    }
+
     if (!store.categories.find((c) => c.id === category.id)) store.categories.push(category);
     if (!store.accounts.find((a) => a.id === account.id))    store.accounts.push(account);
 
-    // Expenses are stored as negative numbers — matches UI convention
-    const signedAmount = (t.amount as number) * (type === "income" ? 1 : -1);
-
     const transaction: Transaction = {
-      id:          storeUid(),
-      description: optString(t.description) ?? "Transação",
-      amount:      signedAmount,
+      id: storeUid(),
+      description,
+      amount: signedAmount,
       type,
       category,
       account,
-      date:        (t.date as string).slice(0, 10),
-      source:      "telegram",
+      date,
+      source: "telegram",
     };
 
     store.transactions.unshift(transaction);
@@ -198,5 +214,5 @@ export async function POST(request: Request) {
 
   await setStore(targetUserId, store);
 
-  return NextResponse.json({ ok: true, queued }, { status: 202 });
+  return NextResponse.json({ ok: true, queued, skipped }, { status: 202 });
 }
